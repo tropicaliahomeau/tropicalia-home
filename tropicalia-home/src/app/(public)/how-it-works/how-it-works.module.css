@@ -1,0 +1,102 @@
+.container {
+    padding: var(--spacing-2xl) 0;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.title {
+    font-size: 3rem;
+    color: var(--text-main);
+    margin-bottom: var(--spacing-md);
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.25rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.stepsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-2xl);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.stepCard {
+    text-align: center;
+    padding: var(--spacing-xl);
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    transition: transform var(--transition-normal);
+}
+
+.stepCard:hover {
+    transform: translateY(-5px);
+}
+
+.stepNumber {
+    width: 50px;
+    height: 50px;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0 auto var(--spacing-lg);
+}
+
+.stepTitle {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-main);
+}
+
+.stepDescription {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.faqSection {
+    margin-top: var(--spacing-3xl);
+}
+
+.faqTitle {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: var(--spacing-xl);
+    color: var(--text-main);
+}
+
+.faqGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+.faqItem {
+    background: var(--card-bg);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.question {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-main);
+}
+
+.answer {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}

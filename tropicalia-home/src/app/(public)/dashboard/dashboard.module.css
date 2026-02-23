@@ -1,0 +1,245 @@
+.container {
+    padding: var(--spacing-xl) 0;
+    min-height: 80vh;
+}
+
+.header {
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border);
+}
+
+.greeting {
+    font-size: 2.5rem;
+    color: var(--text-main);
+    margin-bottom: var(--spacing-xs);
+    font-family: var(--font-heading);
+    font-weight: 700;
+}
+
+.date {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+.card {
+    background: white;
+    padding: 2rem;
+    border-radius: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-light);
+}
+
+.cardTitle {
+    font-size: 1.4rem;
+    margin-bottom: 2rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+}
+
+.statContainer {
+    margin-bottom: var(--spacing-md);
+}
+
+.statValue {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.2;
+}
+
+.statLabel {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: var(--spacing-xs);
+}
+
+.activeStatus {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--success);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: var(--spacing-md);
+    background-color: rgba(16, 185, 129, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+}
+
+.inactiveState {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+}
+
+.deliveryInfo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+    flex-grow: 1;
+}
+
+.deliveryTime {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.deliveryDetail {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-size: 1rem;
+}
+
+.deliveryStatus {
+    margin-top: 1.5rem;
+    color: var(--secondary);
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--secondary-light);
+    border-radius: 12px;
+    width: fit-content;
+}
+
+.orderList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.orderItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    background: #fdfdfd;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.orderItem:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: var(--primary-light);
+}
+
+.orderItem:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.orderInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.orderDate {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.orderMenu {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.statusBadge {
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.statusPending {
+    background-color: #FEF3C7;
+    color: #B45309;
+}
+
+.statusReady {
+    background-color: #E0F2FE;
+    color: #0369A1;
+}
+
+.statusDelivered {
+    background-color: #D1FAE5;
+    color: #047857;
+}
+
+.emptyState {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: var(--spacing-md);
+    font-style: italic;
+}
+
+.textLink {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.textLink:hover {
+    text-decoration: underline;
+}
+
+/* Specific Card Styling */
+.subscriptionCard {
+    border-left: 4px solid var(--primary);
+}
+
+.deliveryCard {
+    border-left: 4px solid var(--secondary);
+}
+
+.ordersCard {
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+    .ordersCard {
+        grid-column: auto;
+    }
+}

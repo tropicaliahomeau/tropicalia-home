@@ -1,0 +1,100 @@
+.container {
+    padding: var(--spacing-xl) 0;
+    min-height: 80vh;
+}
+
+.header {
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title {
+    font-size: 2rem;
+    color: var(--text-main);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.card {
+    background: var(--card-bg);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+}
+
+.statValue {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.orderList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.orderCard {
+    background: var(--card-bg);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.orderInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.customerName {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.orderDetail {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.btnAction {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background-color var(--transition-fast);
+}
+
+.btnReady {
+    background-color: var(--warning);
+    color: white;
+}
+
+.btnReady:hover {
+    background-color: #D97706;
+}
+
+.btnDeliver {
+    background-color: var(--success);
+    color: white;
+}
+
+.btnDeliver:hover {
+    background-color: #059669;
+}
