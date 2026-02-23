@@ -1,0 +1,219 @@
+.container {
+    padding: var(--spacing-xl) 0;
+    height: calc(100vh - 140px);
+    /* Adjust based on navbar/footer height */
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    margin-bottom: var(--spacing-md);
+}
+
+.title {
+    font-size: 1.5rem;
+    color: var(--text-main);
+    margin-bottom: var(--spacing-xs);
+}
+
+.chatLayout {
+    display: flex;
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    /* Important for flex scrolling */
+}
+
+/* Sidebar (Contacts) */
+.sidebar {
+    width: 300px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--background);
+}
+
+.sidebarHeader {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.contactList {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.contactItem {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.contactItem:hover,
+.activeContact {
+    background-color: rgba(0, 191, 165, 0.05);
+    /* varying primary opacity */
+}
+
+.activeContact {
+    border-left: 3px solid var(--primary);
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.contactInfo {
+    flex: 1;
+}
+
+.contactName {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.lastMessage {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+/* Chat Area */
+.chatArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chatHeader {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    background-color: var(--card-bg);
+}
+
+.messagesList {
+    flex: 1;
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    background-color: #fafafa;
+}
+
+.messageBubble {
+    max-width: 70%;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    position: relative;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.sent {
+    align-self: flex-end;
+    background-color: var(--primary);
+    color: white;
+    border-bottom-right-radius: 0;
+}
+
+.received {
+    align-self: flex-start;
+    background-color: white;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 0;
+}
+
+.messageTime {
+    display: block;
+    font-size: 0.7rem;
+    margin-top: var(--spacing-xs);
+    opacity: 0.8;
+    text-align: right;
+}
+
+/* Input Area */
+.inputArea {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border);
+    background-color: var(--card-bg);
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.messageInput {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    outline: none;
+    font-family: var(--font-body);
+    transition: border-color var(--transition-fast);
+}
+
+.messageInput:focus {
+    border-color: var(--primary);
+}
+
+.sendButton {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.sendButton:hover {
+    background-color: var(--primary-hover);
+}
+
+@media (max-width: 768px) {
+    .container {
+        height: calc(100vh - 100px);
+    }
+
+    .chatLayout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: 80px;
+        /* Collapsed height or hidden */
+        display: none;
+        /* Simplification for mobile demo */
+    }
+
+    /* If we wanted a proper mobile view, we'd toggle sidebar/chat visibility */
+}

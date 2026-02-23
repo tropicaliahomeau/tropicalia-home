@@ -1,0 +1,175 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import styles from './Navbar.module.css';
+import { useUser } from '@/context/UserContext';
+
+export default function Navbar() {
+    const pathname = usePathname();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { user, logout } = useUser();
+
+    const navLinks = [
+        { name: 'Home', href: '/' },
+        { name: 'Weekly Menu', href: '/menu' },
+        { name: 'How It Works', href: '/how-it-works' },
+        { name: 'Contact', href: '/contact' },
+    ];
+
+    return (
+        <nav className={styles.navbar}>
+            <div className={styles.container}>
+                <div className={styles.navContent}>
+                    {/* Logo */}
+                    <Link href="/" className={styles.logoLink}>
+                        <div className={styles.logoImageContainer}>
+                            <img src="/logo-primary.jpeg" alt="Tropicalia Logo" className={styles.logoImage} />
+                        </div>
+                        <span className={styles.logoText}>
+                            Tropicalia<span className={styles.logoSuffix}>Home</span>
+                        </span>
+                    </Link>
+
+                    {/* Desktop Navigation */}
+                    <div className={styles.desktopNav}>
+                        <div className={styles.desktopNavLinks}>
+                            {navLinks.map((link) => (
+                                <Link
+                                    key={link.name}
+                                    href={link.href}
+                                    className={`${styles.navLink} ${pathname === link.href ? styles.navLinkActive : ''}`}
+                                >
+                                    {link.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Auth Buttons */}
+                    <div className={styles.authButtons}>
+                        {user ? (
+                            <>
+                                <span className={styles.navLink} style={{ cursor: 'default' }}>
+                                    Hi, {user.name}
+                                </span>
+                                <Link
+                                    href="/dashboard"
+                                    className="btn btn-secondary"
+                                    style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                                >
+                                    Dashboard
+                                </Link>
+                                <button
+                                    onClick={() => logout()}
+                                    className={styles.navLink}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                                >
+                                    Sign Out
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/login"
+                                    className={styles.navLink}
+                                >
+                                    Log in
+                                </Link>
+                                <Link
+                                    href="/register"
+                                    className="btn btn-primary"
+                                >
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <div className={styles.mobileMenuBtnContainer}>
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className={styles.mobileMenuBtn}
+                            aria-label="Toggle menu"
+                        >
+                            {!isMobileMenuOpen ? (
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                                </svg>
+                            ) : (
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Menu */}
+            {isMobileMenuOpen && (
+                <div className={styles.mobileMenu}>
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            href={link.href}
+                            className={`${styles.mobileNavLink} ${pathname === link.href ? styles.mobileNavLinkActive : ''}`}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                            {link.name}
+                        </Link>
+                    ))}
+                    <div className={styles.mobileAuth}>
+                        {user ? (
+                            <>
+                                <div className={styles.mobileNavLink} style={{ opacity: 0.7 }}>
+                                    Signed in as {user.email}
+                                </div>
+                                <Link
+                                    href="/dashboard"
+                                    className={styles.mobileNavLink}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    Dashboard
+                                </Link>
+                                <button
+                                    onClick={() => {
+                                        logout();
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className={styles.mobileNavLink}
+                                    style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none' }}
+                                >
+                                    Sign Out
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/login"
+                                    className={styles.mobileNavLink}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    Log in
+                                </Link>
+                                <Link
+                                    href="/register"
+                                    className="btn btn-primary"
+                                    style={{ width: '100%', justifyContent: 'center' }}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+        </nav>
+    );
+}
