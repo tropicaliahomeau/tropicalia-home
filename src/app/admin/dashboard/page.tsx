@@ -1,10 +1,17 @@
 'use client';
 
 import React from 'react';
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    LineChart, Line, AreaChart, Area
-} from 'recharts';
+import dynamic from 'next/dynamic';
+
+const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
+const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { ssr: false });
+const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false });
 
 // Mock Data
 const kpiData = {
@@ -166,9 +173,9 @@ export default function DashboardPage() {
                                     <td className="py-4 font-bold text-gray-800">${order.total}</td>
                                     <td className="py-4">
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${order.status === 'entregado' ? 'bg-green-100 text-green-700' :
-                                                order.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
-                                                    order.status === 'cancelado' ? 'bg-red-100 text-red-700' :
-                                                        'bg-blue-100 text-blue-700'
+                                            order.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
+                                                order.status === 'cancelado' ? 'bg-red-100 text-red-700' :
+                                                    'bg-blue-100 text-blue-700'
                                             }`}>
                                             {order.status}
                                         </span>

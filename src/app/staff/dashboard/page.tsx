@@ -18,7 +18,7 @@ export default function StaffDashboard() {
         if (!isLoading) {
             if (!user) {
                 router.push('/login');
-            } else if (user.role !== 'staff' && user.role !== 'admin') {
+            } else if (user.role !== 'STAFF' && user.role !== 'ADMIN') {
                 router.push('/dashboard'); // Redirect non-staff
             }
         }
@@ -30,7 +30,7 @@ export default function StaffDashboard() {
     };
 
 
-    if (isLoading || !user || (user.role !== 'staff' && user.role !== 'admin')) {
+    if (isLoading || !user || (user.role !== 'STAFF' && user.role !== 'ADMIN')) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="animate-pulse text-xl text-[var(--primary)]">Loading Staff Portal...</div>

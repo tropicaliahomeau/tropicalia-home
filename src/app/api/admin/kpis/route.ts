@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { MOCK_ORDERS, MOCK_CUSTOMERS, WeeklyOrder } from '@/data/mockAdminData';
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
     const currentWeek = searchParams.get('week_label') || '2026-W07'; // Default to current mock week
 
     // Helper to calculate previous week label (simplified for MVP)
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     // Calculate generic recurring rate or change? 
     // Maybe compare to how many recurred from W05 to W06? 
     // For MVP, let's hardcode a previous recurring count to show change.
-    const prevRecurringCount = 2;
+    const prevRecurringCount = 2 as number;
     const recurringChange = prevRecurringCount === 0 ? 0 : ((recurringCount - prevRecurringCount) / prevRecurringCount) * 100;
 
     return NextResponse.json({

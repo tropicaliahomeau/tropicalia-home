@@ -5,7 +5,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from "react
 import { useRouter } from "next/navigation";
 
 // Define User Types
-export type UserRole = "ADMIN" | "CLIENT";
+export type UserRole = "ADMIN" | "CLIENT" | "STAFF";
 
 export interface Subscription {
     status: 'active' | 'inactive' | 'pending';

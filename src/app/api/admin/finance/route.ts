@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { MOCK_FINANCE, MOCK_ORDERS } from '@/data/mockAdminData';
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
     const weekLabel = searchParams.get('week_label');
 
     if (weekLabel) {
