@@ -1,0 +1,33 @@
+﻿
+> tropicalia-home@0.1.0 lint
+> next lint
+
+node.exe : Invalid 
+project directory 
+provided, no such 
+directory: C:\Users\P
+C\OneDrive\Escritorio
+\Proyecto2026\Tropica
+liaHome v2\tropicalia
+-home\lint
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (Invalid   
+  project...calia    
+-home\lint:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
