@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
     // Calculate generic recurring rate or change? 
     // Maybe compare to how many recurred from W05 to W06? 
     // For MVP, let's hardcode a previous recurring count to show change.
-    const prevRecurringCount = 2; // Hardcoded for MVP
-    const recurringChange = ((recurringCount - prevRecurringCount) / prevRecurringCount) * 100;
+    let prevRecurringCount = 2; // Fixed mock value for MVP
+    const recurringChange = Number(prevRecurringCount) === 0 ? 0 : ((recurringCount - prevRecurringCount) / prevRecurringCount) * 100;
 
     return NextResponse.json({
         ordersConfirmed: { value: confirmedCurrent, change: confirmedChange },
