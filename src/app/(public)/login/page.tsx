@@ -15,7 +15,7 @@ export default function LoginPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // For demo purposes: tropicaliahome.au@gmail.com -> ADMIN, others -> CLIENT
-        let role: "CLIENT" | "ADMIN" = "CLIENT";
+        let role: "CUSTOMER" | "ADMIN" = "CUSTOMER";
         if (email === "tropicaliahome.au@gmail.com") role = "ADMIN";
 
         login(email, role);

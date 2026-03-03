@@ -1,6 +1,6 @@
 // Domain Types for Tropicalia HOME V2
 
-export type UserRole = 'admin' | 'kitchen' | 'staff' | 'customer';
+export type UserRole = 'ADMIN' | 'KITCHEN' | 'STAFF' | 'CUSTOMER';
 
 export interface User {
     id: number;

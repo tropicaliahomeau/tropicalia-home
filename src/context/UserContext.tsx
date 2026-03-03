@@ -5,7 +5,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from "react
 import { useRouter } from "next/navigation";
 
 // Define User Types
-export type UserRole = "ADMIN" | "CLIENT" | "STAFF";
+export type UserRole = "ADMIN" | "KITCHEN" | "STAFF" | "CUSTOMER";
 
 export interface Subscription {
     status: 'active' | 'inactive' | 'pending';
@@ -146,7 +146,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: name,
                 email,
                 phone,
-                role: "CLIENT", // Default role
+                role: "CUSTOMER", // Default role
                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
                 referralCount: 0 // New users start with 0
             };
