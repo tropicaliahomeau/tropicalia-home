@@ -93,6 +93,7 @@ export default function Navbar() {
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                             className={styles.mobileMenuBtn}
                             aria-label="Toggle menu"
+                            style={{ color: isMobileMenuOpen ? 'white' : 'inherit' }}
                         >
                             {!isMobileMenuOpen ? (
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

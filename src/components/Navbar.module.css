@@ -129,16 +129,17 @@
 
 /* Mobile Menu */
 .mobileMenu {
-    background-color: var(--card-bg);
-    border-bottom: 1px solid var(--border);
+    background-color: #4A5D23;
+    /* Dark brand green for high contrast */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     animation: fadeIn 0.3s ease-out;
     padding: var(--spacing-md);
     position: absolute;
-    /* Separate from navbar flow */
     width: 100%;
     top: 100%;
     left: 0;
     box-shadow: var(--shadow-lg);
+    z-index: 1001;
 }
 
 .mobileNavLink {
@@ -146,26 +147,28 @@
     padding: 0.75rem 1rem;
     font-size: 1rem;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: white;
+    /* White text on dark green */
     border-radius: var(--radius-md);
     text-decoration: none;
     transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .mobileNavLink:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: var(--text-main);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 .mobileNavLinkActive {
-    color: var(--primary);
-    background-color: rgba(0, 191, 165, 0.1);
+    color: white;
+    background-color: rgba(255, 255, 255, 0.15);
+    font-weight: 700;
 }
 
 .mobileAuth {
     margin-top: var(--spacing-md);
     padding-top: var(--spacing-sm);
-    border-top: 1px solid var(--border);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
