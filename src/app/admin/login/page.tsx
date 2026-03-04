@@ -14,8 +14,8 @@ export default function AdminLoginPage() {
 
         // Point #1: Double Factor Security Code
         if (code === '947962') {
-            // Set cookie for middleware
-            document.cookie = "admin_auth=true; path=/; max-age=3600"; // 1 hour session
+            // Set cookie for middleware - 12 hours session
+            document.cookie = "admin_auth=true; path=/; max-age=43200";
             router.push('/admin/dashboard');
         } else {
             setError('Código de seguridad incorrecto. Acceso denegado.');

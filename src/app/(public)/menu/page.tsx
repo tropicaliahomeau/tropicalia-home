@@ -79,8 +79,7 @@ export default function MenuPage() {
         }
 
         if (paymentMethod === 'payid' && !payIdFile) {
-            alert("Por favor sube el comprobante de pago para continuar.");
-            return;
+            return; // Button is disabled, but guard for safety
         }
 
         const orderDetails: Subscription = {
@@ -97,8 +96,8 @@ export default function MenuPage() {
         updateSubscription(orderDetails);
 
         const confirmMsg = paymentMethod === 'payid'
-            ? `Tu pedido está PENDIENTE de aprobación. Total: $${total}`
-            : `¡Suscripción confirmada! Total: $${total}`;
+            ? `✅ Pago recibido. Tu pedido está PENDIENTE de aprobación por parte del administrador. Total: $${total}`
+            : `✅ ¡Suscripción confirmada! Total: $${total}`;
 
         alert(confirmMsg);
         router.push('/dashboard');
@@ -280,10 +279,15 @@ export default function MenuPage() {
                                                 </p>
                                             </div>
                                             <button
-                                                className="bg-[#4A5D23] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#3a491c] transition-colors shadow-lg shadow-[#4A5D23]/20 text-sm whitespace-nowrap"
+                                                className={`px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg text-sm whitespace-nowrap
+                                                    ${(paymentMethod === 'payid' && !payIdFile)
+                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+                                                        : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-[#4A5D23]/20'
+                                                    }`}
+                                                disabled={paymentMethod === 'payid' && !payIdFile}
                                                 onClick={handleSubscribe}
                                             >
-                                                Pagar Ahora →
+                                                Finalizar Pedido →
                                             </button>
                                         </div>
 
@@ -299,12 +303,21 @@ export default function MenuPage() {
                                             </label>
                                         </div>
                                         {paymentMethod === 'payid' && (
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="text-[10px] w-full"
-                                                onChange={(e) => setPayIdFile(e.target.files?.[0] || null)}
-                                            />
+                                            <div className="mt-2 p-3 bg-white rounded-lg border border-orange-200 text-[10px] space-y-1">
+                                                <p className="font-bold text-orange-800">Instrucciones PayID:</p>
+                                                <p><span className="font-bold">Email:</span> tropicaliahome.au@gmail.com</p>
+                                                <p><span className="font-bold">Nombre:</span> I HERNANDEZ PACHECO</p>
+                                                <p><span className="font-bold">Referencia:</span> Tu número de teléfono</p>
+                                                <div className="mt-2">
+                                                    <p className="font-bold text-gray-700 mb-1">Adjuntar Comprobante:</p>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="w-full"
+                                                        onChange={(e) => setPayIdFile(e.target.files?.[0] || null)}
+                                                    />
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

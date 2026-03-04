@@ -14,6 +14,8 @@ const PinPad = ({ onCorrectPin }: { onCorrectPin: () => void }) => {
             setPin(newPin);
             if (newPin.length === 4) {
                 if (newPin === CORRECT_PIN) {
+                    // Set cookie for middleware - 12 hours session
+                    document.cookie = "kitchen_auth=true; path=/; max-age=43200";
                     onCorrectPin();
                 } else {
                     setError(true);
@@ -66,6 +68,12 @@ export default function KitchenDashboard() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
+        // Check for existing session cookie
+        const hasSession = document.cookie.split('; ').find(row => row.startsWith('kitchen_auth=true'));
+        if (hasSession) {
+            setIsAuthenticated(true);
+        }
+
         // Load real orders from localStorage
         const loadOrders = () => {
             try {

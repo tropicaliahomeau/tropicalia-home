@@ -23,19 +23,23 @@ export default function Navbar() {
             <div className={styles.container}>
                 <div className={styles.navContent}>
                     {/* Logo (Centered) */}
-                    <div className={styles.logoContainer}>
+                    <div className="absolute left-1/2 -translate-x-1/2">
                         <Link href="/" className={styles.logoLink}>
-                            <div className={styles.logoImageContainer}>
-                                <div className={styles.homeIcon}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                        <polyline points="9 22 9 12 15 12 15 22" />
-                                    </svg>
-                                </div>
-                            </div>
                             <span className={styles.logoText}>
                                 Tropicalia<span className={styles.logoSuffix}>Home</span>
                             </span>
+                        </Link>
+                    </div>
+
+                    {/* Home Icon (Corner) */}
+                    <div className="flex items-center">
+                        <Link href="/" className="text-[#4A5D23] hover:scale-110 transition-transform">
+                            <div className="bg-green-50 p-2 rounded-xl border border-green-100 shadow-sm">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                    <polyline points="9 22 9 12 15 12 15 22" />
+                                </svg>
+                            </div>
                         </Link>
                     </div>
 
