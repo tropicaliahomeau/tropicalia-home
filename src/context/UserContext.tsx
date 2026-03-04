@@ -31,13 +31,16 @@ export interface User {
 
 // Define Order Interface
 export interface Order {
-    id: string; // Changed to string for custom format
+    id: string;
     customer: string;
     meal: string;
     status: string;
-    customerId?: string; // Link to user ID
+    customerId?: string;
     isNotified?: boolean;
     date?: string;
+    total?: number;
+    lunchTotal?: number;
+    extrasTotal?: number;
 }
 
 interface UserContextType {
@@ -238,6 +241,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Generate Unique Order ID (Point #4 Additional)
         const orderId = `TH-${Math.floor(1000 + Math.random() * 9000)}`;
 
+        // Calculate granular totals
+        const lunchTotal = subscription.planName.toLowerCase().includes('semana') ? subscription.total || 0 : (subscription.total || 0);
+        // Note: For now, if no explicit breakdown, we'll try to estimate or just store total.
+        // Better: using the actual extras list if available.
+        const extrasTotal = subscription.extras?.reduce((sum, e) => sum + (e.price * e.quantity), 0) || 0;
+        const mainLunchTotal = (subscription.total || 0) - extrasTotal;
+
         // Mock creating a new order
         const newOrder: Order = {
             id: orderId,
@@ -245,7 +255,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
             meal: subscription.planName,
             status: "Pending",
             customerId: user.id,
-            date: new Date().toISOString().split('T')[0]
+            date: new Date().toISOString().split('T')[0],
+            total: subscription.total,
+            lunchTotal: mainLunchTotal,
+            extrasTotal: extrasTotal
         };
 
         // Update User History/Context
@@ -254,7 +267,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setUser(updatedUserFinal);
         localStorage.setItem("tropicalia_user", JSON.stringify(updatedUserFinal));
 
-        setAllOrders(prev => [...prev, newOrder]);
+        setAllOrders(prev => {
+            const updated = [...prev, newOrder];
+            localStorage.setItem("tropicalia_orders", JSON.stringify(updated));
+            return updated;
+        });
     };
 
     return (
