@@ -176,12 +176,23 @@ export default function DashboardPage() {
                                         <div className={`w-1.5 h-10 rounded-full ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-400' : 'bg-orange-400'}`}></div>
                                         <div>
                                             <p className="font-bold text-gray-900 leading-tight">{order.customer}</p>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">#{order.id} • {order.meal}</p>
+                                            <p className="text-[10px] font-bold text-[#4A5D23]">{order.phone || 'Sin teléfono'}</p>
+                                            <p className="text-[9px] font-bold text-gray-400 mt-0.5 uppercase tracking-tighter">#{order.id} • {order.meal}</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="flex flex-col items-end gap-1">
                                         <p className="font-black text-gray-900">${order.total}</p>
-                                        <p className={`text-[10px] font-black uppercase ${order.status === 'entregado' || order.status === 'Delivered' ? 'text-green-500' : 'text-orange-500'}`}>{order.status}</p>
+                                        <p className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                                            {order.status}
+                                        </p>
+                                        {order.payIdProof && (
+                                            <button
+                                                onClick={() => alert(`Comprobante adjunto: ${order.payIdProof}`)}
+                                                className="text-[9px] font-bold text-blue-600 hover:underline uppercase"
+                                            >
+                                                Ver Comprobante
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}

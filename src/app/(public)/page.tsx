@@ -157,12 +157,6 @@ export default function Home() {
             Tu pasión por el sabor latino tiene premio. <br className="hidden md:block" />
             Descubre cómo tu red de amigos puede desbloquear semanas de comida sin costo.
           </p>
-          <Link
-            href="/register"
-            className="inline-block bg-white text-[#4A5D23] px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-xl hover:shadow-white/20 transform hover:-translate-y-1"
-          >
-            Revelar el secreto
-          </Link>
         </div>
       </section>
     </div>

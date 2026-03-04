@@ -36,11 +36,13 @@ export interface Order {
     meal: string;
     status: string;
     customerId?: string;
+    phone?: string;
     isNotified?: boolean;
     date?: string;
     total?: number;
     lunchTotal?: number;
     extrasTotal?: number;
+    payIdProof?: string | null;
 }
 
 interface UserContextType {
@@ -248,13 +250,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const newOrder: Order = {
             id: orderId,
             customer: user.name,
+            phone: user.phone || 'N/A', // Added phone for Admin Feed
             meal: subscription.planName,
             status: "Pending",
             customerId: user.id,
             date: new Date().toISOString().split('T')[0],
             total: subscription.total,
             lunchTotal: mainLunchTotal,
-            extrasTotal: extrasTotal
+            extrasTotal: extrasTotal,
+            payIdProof: subscription.payIdProof // Ensure proof is passed
         };
 
         // Update User History/Context

@@ -24,10 +24,14 @@ export default function Navbar() {
                 <div className={styles.navContent}>
                     {/* Logo (Centered) */}
                     <div className="absolute left-1/2 -translate-x-1/2">
-                        <Link href="/" className={styles.logoLink}>
-                            <span className={styles.logoText}>
-                                Tropicalia<span className={styles.logoSuffix}>Home</span>
-                            </span>
+                        <Link href="/" className="flex items-center">
+                            <Image
+                                src="/logo-tropicalia.png"
+                                alt="Tropicalia Home"
+                                width={180}
+                                height={60}
+                                className="h-12 w-auto object-contain"
+                            />
                         </Link>
                     </div>
 

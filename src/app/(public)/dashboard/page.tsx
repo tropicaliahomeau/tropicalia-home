@@ -127,7 +127,7 @@ export default function ClientDashboard() {
                             <div className={styles.deliveryDetail}>
                                 <p className="font-bold text-gray-800">{user.subscription.planName}</p>
                                 <p className="text-sm mt-1 text-[#4A5D23] font-bold">
-                                    Pedido #{(user.subscription as any).orderId || 'TH-NEW'} • Porción Regular
+                                    Pedido #{(user.subscription as any).orderId || 'TH-NEW'}
                                 </p>
                             </div>
                             <div className={styles.deliveryStatus}>
