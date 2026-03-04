@@ -16,6 +16,8 @@ export default function RegisterPage() {
     const [hasAllergies, setHasAllergies] = useState<boolean | null>(null);
     const [allergyDetails, setAllergyDetails] = useState('');
     const [referrerPhone, setReferrerPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
