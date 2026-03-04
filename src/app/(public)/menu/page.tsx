@@ -22,7 +22,20 @@ export default function MenuPage() {
 
     // Payment State
     const [paymentMethod, setPaymentMethod] = useState<'auto' | 'payid'>('auto');
-    const [payIdFile, setPayIdFile] = useState<File | null>(null);
+    const [payIdProofBase64, setPayIdProofBase64] = useState<string | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPayIdProofBase64(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setPayIdProofBase64(null);
+        }
+    };
 
     const currentMenu = MENUS.find(m => m.id === selectedWeekId) || MENUS[0];
 
@@ -78,7 +91,7 @@ export default function MenuPage() {
             return;
         }
 
-        if (paymentMethod === 'payid' && !payIdFile) {
+        if (paymentMethod === 'payid' && !payIdProofBase64) {
             return; // Button is disabled, but guard for safety
         }
 
@@ -89,7 +102,7 @@ export default function MenuPage() {
             extras: extras.filter(e => e.quantity > 0),
             total,
             paymentMethod: paymentMethod as 'auto' | 'payid',
-            payIdProof: payIdFile ? payIdFile.name : null
+            payIdProof: payIdProofBase64
         };
 
         console.log("Processing Order:", orderDetails);
@@ -280,11 +293,11 @@ export default function MenuPage() {
                                             </div>
                                             <button
                                                 className={`px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg text-sm whitespace-nowrap
-                                                    ${(paymentMethod === 'payid' && !payIdFile)
+                                                    ${(paymentMethod === 'payid' && !payIdProofBase64)
                                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
                                                         : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-[#4A5D23]/20'
                                                     }`}
-                                                disabled={paymentMethod === 'payid' && !payIdFile}
+                                                disabled={paymentMethod === 'payid' && !payIdProofBase64}
                                                 onClick={handleSubscribe}
                                             >
                                                 Finalizar Pedido →
@@ -332,7 +345,7 @@ export default function MenuPage() {
                                                             type="file"
                                                             accept="image/*"
                                                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
-                                                            onChange={(e) => setPayIdFile(e.target.files?.[0] || null)}
+                                                            onChange={handleFileChange}
                                                         />
                                                     </div>
                                                 </div>

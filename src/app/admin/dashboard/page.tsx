@@ -15,6 +15,7 @@ const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: fals
 
 export default function DashboardPage() {
     const [activeTab, setActiveTab] = React.useState<'hoy' | 'macro'>('hoy');
+    const [selectedProof, setSelectedProof] = React.useState<string | null>(null);
     const [realKpis, setRealKpis] = React.useState({
         totalOrders: 0,
         deliveredOrders: 0,
@@ -187,8 +188,8 @@ export default function DashboardPage() {
                                         </p>
                                         {order.payIdProof && (
                                             <button
-                                                onClick={() => alert(`Comprobante adjunto: ${order.payIdProof}`)}
-                                                className="text-[9px] font-bold text-blue-600 hover:underline uppercase"
+                                                onClick={() => setSelectedProof(order.payIdProof as string)}
+                                                className="text-[9px] font-bold text-blue-600 hover:text-blue-800 hover:underline uppercase transition-colors"
                                             >
                                                 Ver Comprobante
                                             </button>
@@ -262,6 +263,32 @@ export default function DashboardPage() {
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Proof Modal Overlay */}
+            {selectedProof && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in"
+                    onClick={() => setSelectedProof(null)}
+                >
+                    <div className="relative max-w-2xl w-full bg-white rounded-3xl p-2 shadow-2xl overflow-hidden animate-scale-up">
+                        <button
+                            className="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center font-black hover:bg-black transition-all z-10"
+                            onClick={() => setSelectedProof(null)}
+                        >
+                            ✕
+                        </button>
+                        <div className="overflow-auto max-h-[80vh] rounded-2xl">
+                            <img
+                                src={selectedProof}
+                                alt="Comprobante de Pago"
+                                className="w-full h-auto object-contain"
+                            />
+                        </div>
+                        <div className="p-4 text-center">
+                            <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Comprobante PayID</p>
                         </div>
                     </div>
                 </div>

@@ -137,7 +137,58 @@ export default function KitchenDashboard() {
     return (
         <div className="min-h-screen bg-[#F8F9FA] pb-20 font-sans">
             {/* Header List View */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+            {/* Operative Summary Section (Phase 3) */}
+            <section className="max-w-7xl mx-auto px-4 md:px-6 mt-6">
+                <div className="bg-gray-900 rounded-[2rem] p-6 text-white shadow-xl">
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Daily Totals */}
+                        <div className="flex-1">
+                            <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-4">Totales por Día (Ciclo Actual)</h3>
+                            <div className="grid grid-cols-5 gap-2">
+                                {['LUN', 'MAR', 'MIE', 'JUE', 'VIE'].map((day, idx) => {
+                                    const count = orders.filter(o => {
+                                        const isDone = o.status.toLowerCase().includes('entregado') || o.status === 'Delivered';
+                                        if (isDone) return false;
+                                        // Simple logic: if 'meal' string contains the day name or if it's 'Semana'
+                                        const dayNames = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+                                        const dayNum = idx + 1;
+                                        return o.meal.toLowerCase().includes('semana') || (o.meals && o.meals.includes(dayNum));
+                                    }).length;
+
+                                    return (
+                                        <div key={day} className="bg-white/5 rounded-2xl p-3 text-center border border-white/5">
+                                            <p className="text-[10px] font-bold text-gray-400 mb-1">{day}</p>
+                                            <p className="text-xl font-black">{count}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Allergy Summary */}
+                        <div className="flex-1 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-8">
+                            <h3 className="text-xs font-black uppercase text-red-400 tracking-widest mb-4 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                                Consolidado de Alergias
+                            </h3>
+                            <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                                {orders.filter(o => o.allergies && o.allergies.toLowerCase() !== 'ninguna' && o.allergies !== '').length > 0 ? (
+                                    orders.filter(o => o.allergies && o.allergies.toLowerCase() !== 'ninguna' && o.allergies !== '').map((o, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-[11px] bg-red-500/10 p-2 rounded-xl border border-red-500/20">
+                                            <span className="font-bold text-red-200">{o.customer}</span>
+                                            <span className="font-black text-red-500 uppercase">{o.allergies}</span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-500 font-bold text-xs italic">No hay requerimientos especiales</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50 mt-6">
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
