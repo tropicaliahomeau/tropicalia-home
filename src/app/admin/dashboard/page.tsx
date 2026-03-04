@@ -18,6 +18,8 @@ const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: fals
 export default function DashboardPage() {
     const [realKpis, setRealKpis] = React.useState({
         totalOrders: 0,
+        deliveredOrders: 0,
+        pendingOrders: 0,
         activeCustomers: 0,
         recurrentCustomers: 0,
         allergicCustomers: 0,
@@ -41,9 +43,13 @@ export default function DashboardPage() {
             const allergicCount = customers.filter((u: any) => u.allergies && u.allergies !== "Ninguna").length;
 
             const revenue = orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0);
+            const delivered = orders.filter((o: any) => o.status === 'entregado' || o.status === 'Delivered').length;
+            const pending = orders.filter((o: any) => o.status === 'pendiente' || o.status === 'Pending' || o.status === 'preparando').length;
 
             setRealKpis({
                 totalOrders: orders.length,
+                deliveredOrders: delivered,
+                pendingOrders: pending,
                 activeCustomers: customers.length,
                 recurrentCustomers: customers.filter((u: any) => u.subscription).length,
                 allergicCustomers: allergicCount,
@@ -76,15 +82,45 @@ export default function DashboardPage() {
                 </button>
             </header>
 
-            {/* Tarjetas de Resumen (Top Row) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Tarjetas de Resumen (Expandido a 2 filas) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Fila 1: Operaciones */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Clientes Recurrentes</p>
+                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Pedidos del Ciclo</p>
                     <div className="flex items-end justify-between mt-2">
-                        <h4 className="text-4xl font-bold text-[#4A5D23]">{realKpis.recurrentCustomers}</h4>
-                        <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full mb-1">
-                            {realKpis.activeCustomers > 0 ? Math.round((realKpis.recurrentCustomers / realKpis.activeCustomers) * 100) : 0}% del total
+                        <h4 className="text-4xl font-bold text-[#4A5D23]">{realKpis.totalOrders}</h4>
+                        <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full mb-1">
+                            Total Actual
                         </span>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Pedidos Entregados</p>
+                    <div className="flex items-end justify-between mt-2">
+                        <h4 className="text-4xl font-bold text-green-600">{realKpis.deliveredOrders}</h4>
+                        <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full mb-1">
+                            Finalizados
+                        </span>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Pendientes de Entrega</p>
+                    <div className="flex items-end justify-between mt-2">
+                        <h4 className="text-4xl font-bold text-orange-500">{realKpis.pendingOrders}</h4>
+                        <span className="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-full mb-1">
+                            En proceso
+                        </span>
+                    </div>
+                </div>
+
+                {/* Fila 2: Clientes y Finanzas */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Ingreso Total</p>
+                    <div className="flex items-end justify-between mt-2">
+                        <h4 className="text-4xl font-bold text-gray-800">${realKpis.totalRevenue.toLocaleString()}</h4>
+                        <span className="text-sm text-gray-400 mb-1">Ciclo Real</span>
                     </div>
                 </div>
 
@@ -93,24 +129,18 @@ export default function DashboardPage() {
                     <div className="flex items-end justify-between mt-2">
                         <h4 className="text-4xl font-bold text-gray-800">{realKpis.allergicCustomers}</h4>
                         <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full mb-1">
-                            Requieren Atención
+                            Atención Crítica
                         </span>
                     </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Ingreso Total</p>
+                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Clientes Recurrentes</p>
                     <div className="flex items-end justify-between mt-2">
-                        <h4 className="text-4xl font-bold text-gray-800">${realKpis.totalRevenue.toLocaleString()}</h4>
-                        <span className="text-sm text-gray-400 mb-1">Este Ciclo</span>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Retención</p>
-                    <div className="flex items-end justify-between mt-2">
-                        <h4 className="text-4xl font-bold text-gray-800">{realKpis.retentionRate}%</h4>
-                        <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full mb-1">Real-time</span>
+                        <h4 className="text-4xl font-bold text-[#4A5D23]">{realKpis.recurrentCustomers}</h4>
+                        <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full mb-1">
+                            {realKpis.activeCustomers > 0 ? Math.round((realKpis.recurrentCustomers / realKpis.activeCustomers) * 100) : 0}% Retención
+                        </span>
                     </div>
                 </div>
             </div>
