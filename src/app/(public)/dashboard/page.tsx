@@ -114,10 +114,21 @@ export default function ClientDashboard() {
                     </h2>
                     {user.subscription && user.subscription.meals.length > 0 ? (
                         <div className={styles.deliveryInfo}>
-                            <div className={styles.deliveryTime}>Mañana, 12:30 PM</div>
+                            <div className="text-[#4A5D23] font-bold text-sm mb-2">📍 Punto de Recogida:</div>
+                            <div className="text-gray-700 text-xs mb-3 space-y-1">
+                                <p>Tropicalia Latin Food</p>
+                                <p>201 Ballarat Rd, Footscray</p>
+                                <p className="italic">(La Esquina Latina)</p>
+                            </div>
+                            <div className="bg-orange-50 border border-orange-100 p-2 rounded-lg mb-4">
+                                <p className="text-orange-800 text-xs font-bold">⏰ Horario:</p>
+                                <p className="text-orange-900 text-sm font-bold">Domingo de 4:00 PM a 9:00 PM</p>
+                            </div>
                             <div className={styles.deliveryDetail}>
-                                <p className="font-bold text-gray-800">Menú Semanal Nutritivo</p>
-                                <p className="text-sm mt-1">Pedido #{user.subscription.meals[0]} • Porción Regular</p>
+                                <p className="font-bold text-gray-800">{user.subscription.planName}</p>
+                                <p className="text-sm mt-1 text-[#4A5D23] font-bold">
+                                    Pedido #{(user.subscription as any).orderId || 'TH-NEW'} • Porción Regular
+                                </p>
                             </div>
                             <div className={styles.deliveryStatus}>
                                 <span>🕒</span> Preparando tu almuerzo...

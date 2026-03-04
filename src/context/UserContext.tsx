@@ -31,12 +31,13 @@ export interface User {
 
 // Define Order Interface
 export interface Order {
-    id: number;
+    id: string; // Changed to string for custom format
     customer: string;
     meal: string;
     status: string;
     customerId?: string; // Link to user ID
     isNotified?: boolean;
+    date?: string;
 }
 
 interface UserContextType {
@@ -47,8 +48,8 @@ interface UserContextType {
     register: (name: string, email: string, phone: string, allergies: string, referrerPhone?: string) => void;
     updateSubscription: (subscription: Subscription) => void;
     allOrders: Order[];
-    updateIsNotified: (id: number) => void;
-    updateOrderStatus: (id: number, status: string) => void;
+    updateIsNotified: (id: string) => void;
+    updateOrderStatus: (id: string, status: string) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -160,6 +161,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
             setUser(mockUser);
             localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
+
+            // Sync with Admin Dashboard (Production Transition - Point #2)
+            try {
+                const allUsersJson = localStorage.getItem("tropicalia_all_users") || "[]";
+                const allUsers = JSON.parse(allUsersJson);
+                // Avoid duplicates by email
+                const existingIndex = allUsers.findIndex((u: any) => u.email === email);
+                if (existingIndex > -1) {
+                    allUsers[existingIndex] = mockUser;
+                } else {
+                    allUsers.push(mockUser);
+                }
+                localStorage.setItem("tropicalia_all_users", JSON.stringify(allUsers));
+            } catch (e) { }
+
             setIsLoading(false);
             router.push('/dashboard');
         }, 1000);
@@ -172,18 +188,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     const [allOrders, setAllOrders] = useState<Order[]>([
-        { id: 1, customer: "João Silva", meal: "Feijoada Completa", status: "Pending", customerId: "client1" },
-        { id: 2, customer: "Maria Souza", meal: "Grilled Chicken Salad", status: "Ready", customerId: "client2" },
-        { id: 3, customer: "Pedro Santos", meal: "Fish Tacos", status: "Pending", customerId: "client3" },
+        { id: "TH-1001", customer: "João Silva", meal: "Feijoada Completa", status: "Pending", customerId: "client1", date: "2026-03-01" },
+        { id: "TH-1002", customer: "Maria Souza", meal: "Grilled Chicken Salad", status: "Ready", customerId: "client2", date: "2026-03-02" },
+        { id: "TH-1003", customer: "Pedro Santos", meal: "Fish Tacos", status: "Pending", customerId: "client3", date: "2026-03-03" },
     ]);
 
-    const updateOrderStatus = (id: number, status: string) => {
+    const updateOrderStatus = (id: string, status: string) => {
         setAllOrders(prev => prev.map(order =>
             order.id === id ? { ...order, status } : order
         ));
     };
 
-    const updateIsNotified = (id: number) => {
+    const updateIsNotified = (id: string) => {
         setAllOrders(prev => prev.map(order =>
             order.id === id ? { ...order, isNotified: true } : order
         ));
@@ -219,14 +235,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
         }
 
+        // Generate Unique Order ID (Point #4 Additional)
+        const orderId = `TH-${Math.floor(1000 + Math.random() * 9000)}`;
+
         // Mock creating a new order
         const newOrder: Order = {
-            id: allOrders.length + 1,
+            id: orderId,
             customer: user.name,
-            meal: "Chef's Special (Subscription)",
+            meal: subscription.planName,
             status: "Pending",
-            customerId: user.id
+            customerId: user.id,
+            date: new Date().toISOString().split('T')[0]
         };
+
+        // Update User History/Context
+        const finalSubscriptionWithId = { ...finalSubscription, orderId };
+        const updatedUserFinal = { ...user, subscription: finalSubscriptionWithId };
+        setUser(updatedUserFinal);
+        localStorage.setItem("tropicalia_user", JSON.stringify(updatedUserFinal));
+
         setAllOrders(prev => [...prev, newOrder]);
     };
 

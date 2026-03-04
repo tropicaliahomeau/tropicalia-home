@@ -13,41 +13,57 @@ const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.Res
 const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { ssr: false });
 const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false });
 
-// Mock Data
-const kpiData = {
-    totalOrders: 203,
-    activeCustomers: 168,
-    recurrentCustomers: 145, // New Metric
-    allergicCustomers: 12,   // New Metric
-    totalRevenue: 6150,
-    retentionRate: 99
-};
-
-const weeklyData = [
-    { name: 'Semana 1', usuarios: 120, pedidos: 150 },
-    { name: 'Semana 2', usuarios: 135, pedidos: 180 },
-    { name: 'Semana 3', usuarios: 150, pedidos: 190 },
-    { name: 'Semana 4', usuarios: 168, pedidos: 203 },
-];
-
-const monthlyData = [
-    { name: 'Sep', ventas: 4000 },
-    { name: 'Oct', ventas: 4500 },
-    { name: 'Nov', ventas: 3800 },
-    { name: 'Dic', ventas: 6000 },
-    { name: 'Ene', ventas: 5200 },
-    { name: 'Feb', ventas: 6150 },
-];
-
-const recentOrders = [
-    { id: '1001', customer: 'Ana María', status: 'entregado', total: 85, date: '2026-02-16' },
-    { id: '1002', customer: 'Jorge Luis', status: 'pendiente', total: 72, date: '2026-02-16' },
-    { id: '1003', customer: 'Luisa Fernanda', status: 'preparando', total: 85, date: '2026-02-16' },
-    { id: '1004', customer: 'Carlos A.', status: 'entregado', total: 85, date: '2026-02-15' },
-    { id: '1005', customer: 'Maria P.', status: 'cancelado', total: 0, date: '2026-02-15' },
-];
+// Remove Static Mock Data for Production Transition (Point #2)
 
 export default function DashboardPage() {
+    const [realKpis, setRealKpis] = React.useState({
+        totalOrders: 0,
+        activeCustomers: 0,
+        recurrentCustomers: 0,
+        allergicCustomers: 0,
+        totalRevenue: 0,
+        retentionRate: 0
+    });
+    const [recentOrders, setRecentOrders] = React.useState<any[]>([]);
+
+    const [realWeeklyData, setRealWeeklyData] = React.useState<any[]>([]);
+
+    React.useEffect(() => {
+        // Aggregate real data (Production Transition - Point #2 & #3)
+        try {
+            const usersJson = localStorage.getItem("tropicalia_all_users") || "[]";
+            const users = JSON.parse(usersJson);
+
+            const ordersJson = localStorage.getItem("tropicalia_orders") || "[]";
+            const orders = JSON.parse(ordersJson);
+
+            const customers = users.filter((u: any) => u.role === 'CUSTOMER');
+            const allergicCount = customers.filter((u: any) => u.allergies && u.allergies !== "Ninguna").length;
+
+            const revenue = orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0);
+
+            setRealKpis({
+                totalOrders: orders.length,
+                activeCustomers: customers.length,
+                recurrentCustomers: customers.filter((u: any) => u.subscription).length,
+                allergicCustomers: allergicCount,
+                totalRevenue: revenue,
+                retentionRate: customers.length > 0 ? 100 : 0
+            });
+
+            // Mock weekly growth for the first real week if data exists
+            if (orders.length > 0) {
+                setRealWeeklyData([
+                    { name: 'S-Actual', usuarios: customers.length, pedidos: orders.length }
+                ]);
+            }
+
+            setRecentOrders(orders.slice(-5).reverse());
+        } catch (e) {
+            console.error("Dashboard Sync Error:", e);
+        }
+    }, []);
+
     return (
         <div className="space-y-8 animate-fade-in pb-10">
             <header className="flex justify-between items-end mb-6">
@@ -65,9 +81,9 @@ export default function DashboardPage() {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Clientes Recurrentes</p>
                     <div className="flex items-end justify-between mt-2">
-                        <h4 className="text-4xl font-bold text-[#4A5D23]">{kpiData.recurrentCustomers}</h4>
+                        <h4 className="text-4xl font-bold text-[#4A5D23]">{realKpis.recurrentCustomers}</h4>
                         <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full mb-1">
-                            86% del total
+                            {realKpis.activeCustomers > 0 ? Math.round((realKpis.recurrentCustomers / realKpis.activeCustomers) * 100) : 0}% del total
                         </span>
                     </div>
                 </div>
@@ -75,7 +91,7 @@ export default function DashboardPage() {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow border-l-4 border-l-red-400">
                     <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Clientes Alérgicos</p>
                     <div className="flex items-end justify-between mt-2">
-                        <h4 className="text-4xl font-bold text-gray-800">{kpiData.allergicCustomers}</h4>
+                        <h4 className="text-4xl font-bold text-gray-800">{realKpis.allergicCustomers}</h4>
                         <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full mb-1">
                             Requieren Atención
                         </span>
@@ -85,16 +101,16 @@ export default function DashboardPage() {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Ingreso Total</p>
                     <div className="flex items-end justify-between mt-2">
-                        <h4 className="text-4xl font-bold text-gray-800">${kpiData.totalRevenue.toLocaleString()}</h4>
-                        <span className="text-sm text-gray-400 mb-1">Este Mes</span>
+                        <h4 className="text-4xl font-bold text-gray-800">${realKpis.totalRevenue.toLocaleString()}</h4>
+                        <span className="text-sm text-gray-400 mb-1">Este Ciclo</span>
                     </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <p className="text-sm text-gray-400 font-medium uppercase tracking-wider">Retención</p>
                     <div className="flex items-end justify-between mt-2">
-                        <h4 className="text-4xl font-bold text-gray-800">{kpiData.retentionRate}%</h4>
-                        <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full mb-1">Top 1%</span>
+                        <h4 className="text-4xl font-bold text-gray-800">{realKpis.retentionRate}%</h4>
+                        <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full mb-1">Real-time</span>
                     </div>
                 </div>
             </div>
@@ -103,46 +119,36 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Comparativo Últimas 4 Semanas */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-800 mb-6 text-lg">Crecimiento - Últimas 4 Semanas</h3>
+                    <h3 className="font-bold text-gray-800 mb-6 text-lg">Pedidos vs Usuarios Activos</h3>
                     <div className="h-64 cursor-default">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={weeklyData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    cursor={{ fill: '#f9f9f9' }}
-                                />
-                                <Bar dataKey="usuarios" name="Usuarios Activos" fill="#4A5D23" radius={[6, 6, 0, 0]} />
-                                <Bar dataKey="pedidos" name="Pedidos" fill="#D4A373" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {realWeeklyData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={realWeeklyData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Bar dataKey="usuarios" name="Usuarios Activos" fill="#4A5D23" radius={[6, 6, 0, 0]} />
+                                    <Bar dataKey="pedidos" name="Pedidos" fill="#D4A373" radius={[6, 6, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400 italic text-sm text-center">
+                                Esperando primeros pedidos de producción para generar gráficas...
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Comparativo Últimos 6 Meses */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-800 mb-6 text-lg">Tendencia de Ventas - 6 Meses</h3>
+                    <h3 className="font-bold text-gray-800 mb-6 text-lg">Tendencia de Ventas (Producción)</h3>
                     <div className="h-64 cursor-default">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={monthlyData}>
-                                <defs>
-                                    <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4A5D23" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#4A5D23" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} tickFormatter={(value) => `$${value}`} />
-                                <Tooltip
-                                    formatter={(value) => [`$${value}`, 'Ventas']}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Area type="monotone" dataKey="ventas" stroke="#4A5D23" strokeWidth={3} fillOpacity={1} fill="url(#colorVentas)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        <div className="flex items-center justify-center h-full text-gray-400 italic text-sm">
+                            Empezando ciclo real... No hay datos suficientes para gráficas históricas aún.
+                        </div>
                     </div>
                 </div>
             </div>
