@@ -26,6 +26,7 @@ export interface User {
     avatar?: string;
     subscription?: Subscription;
     referralCount?: number;
+    allergies?: string;
 }
 
 // Define Order Interface
@@ -43,7 +44,7 @@ interface UserContextType {
     isLoading: boolean;
     login: (email: string, role: UserRole) => void;
     logout: () => void;
-    register: (name: string, email: string, phone: string, referrerPhone?: string) => void;
+    register: (name: string, email: string, phone: string, allergies: string, referrerPhone?: string) => void;
     updateSubscription: (subscription: Subscription) => void;
     allOrders: Order[];
     updateIsNotified: (id: number) => void;
@@ -126,7 +127,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }, 800);
     };
 
-    const register = (name: string, email: string, phone: string, referrerPhone?: string) => {
+    const register = (name: string, email: string, phone: string, allergies: string, referrerPhone?: string) => {
         setIsLoading(true);
         // Simulate API call
         setTimeout(() => {
@@ -136,6 +137,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     const referrals = JSON.parse(localStorage.getItem("tropicalia_referrals") || "{}");
                     referrals[referrerPhone] = (referrals[referrerPhone] || 0) + 1;
                     localStorage.setItem("tropicalia_referrals", JSON.stringify(referrals));
+
+                    // Check if they reached 5 referrals now (Critical Point #7)
+                    if (referrals[referrerPhone] >= 5) {
+                        console.log("REWARD UNLOCKED: 5 Referrals reached for", referrerPhone);
+                    }
                 } catch (e) {
                     console.error("Error saving referral", e);
                 }
@@ -146,6 +152,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: name,
                 email,
                 phone,
+                allergies, // Added allergies
                 role: "CUSTOMER", // Default role
                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
                 referralCount: 0 // New users start with 0
@@ -184,11 +191,35 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const updateSubscription = (subscription: Subscription) => {
         if (!user) return;
-        const updatedUser = { ...user, subscription };
-        setUser(updatedUser);
-        localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
 
-        // Mock creating a new order based on subscription
+        let finalSubscription = { ...subscription };
+
+        // Apply Referral Reward (Critical Point #7)
+        if (user.referralCount && user.referralCount >= 5) {
+            console.log("APPLYING FREE WEEK REWARD!");
+            finalSubscription.total = 0;
+            finalSubscription.planName = `🎁 SEMANA GRATIS! (${subscription.planName})`;
+
+            // Reset counter in storage
+            const updatedUser = { ...user, referralCount: 0, subscription: finalSubscription };
+            try {
+                const referrals = JSON.parse(localStorage.getItem("tropicalia_referrals") || "{}");
+                if (user.phone) {
+                    referrals[user.phone] = 0;
+                    localStorage.setItem("tropicalia_referrals", JSON.stringify(referrals));
+                }
+            } catch (e) { }
+
+            setUser(updatedUser);
+            localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
+            alert("✅ ¡FELICIDADES! Has desbloqueado tu SEMANA GRATIS por traer a 5 amigos. Este pedido tiene un 100% de descuento.");
+        } else {
+            const updatedUser = { ...user, subscription: finalSubscription };
+            setUser(updatedUser);
+            localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
+        }
+
+        // Mock creating a new order
         const newOrder: Order = {
             id: allOrders.length + 1,
             customer: user.name,

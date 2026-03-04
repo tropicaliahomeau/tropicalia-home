@@ -22,15 +22,22 @@ export default function Navbar() {
         <nav className={styles.navbar}>
             <div className={styles.container}>
                 <div className={styles.navContent}>
-                    {/* Logo */}
-                    <Link href="/" className={styles.logoLink}>
-                        <div className={styles.logoImageContainer}>
-                            <img src="/logo-primary.jpeg" alt="Tropicalia Logo" className={styles.logoImage} />
-                        </div>
-                        <span className={styles.logoText}>
-                            Tropicalia<span className={styles.logoSuffix}>Home</span>
-                        </span>
-                    </Link>
+                    {/* Logo (Centered) */}
+                    <div className={styles.logoContainer}>
+                        <Link href="/" className={styles.logoLink}>
+                            <div className={styles.logoImageContainer}>
+                                <div className={styles.homeIcon}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                        <polyline points="9 22 9 12 15 12 15 22" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <span className={styles.logoText}>
+                                Tropicalia<span className={styles.logoSuffix}>Home</span>
+                            </span>
+                        </Link>
+                    </div>
 
                     {/* Desktop Navigation */}
                     <div className={styles.desktopNav}>

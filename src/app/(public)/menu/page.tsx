@@ -231,26 +231,38 @@ export default function MenuPage() {
                     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] p-4 z-50 animate-slide-up">
                         <div className="container mx-auto max-w-4xl">
 
-                            {/* Extras Section */}
+                            {/* Extras Section (Upselling - Point 6) */}
                             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                                        🥤 Bebidas Extras:
-                                    </h4>
-                                    <div className="flex gap-3 overflow-x-auto pb-1">
-                                        {extras.map(drink => (
-                                            <div key={drink.id} className="flex items-center bg-gray-50 p-2 rounded-lg border border-gray-200 shrink-0">
-                                                <div className="mr-3">
-                                                    <p className="text-xs font-bold text-gray-700">{drink.name}</p>
-                                                    <p className="text-[10px] text-gray-500">${drink.price.toFixed(2)}</p>
+                                <div className="flex-1 w-full">
+                                    <div className="bg-[#4A5D23]/5 p-3 rounded-xl border border-[#4A5D23]/10">
+                                        <h4 className="font-bold text-sm text-[#4A5D23] mb-3 flex items-center gap-2">
+                                            🥤 ¡Acompaña tu almuerzo con el sabor de casa!
+                                        </h4>
+                                        <div className="flex gap-3 overflow-x-auto pb-1">
+                                            {extras.map(drink => (
+                                                <div key={drink.id} className="flex items-center bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
+                                                    <div className="mr-4">
+                                                        <p className="text-xs font-bold text-gray-800">{drink.name}</p>
+                                                        <p className="text-[10px] text-gray-500">${drink.price.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => updateExtraQuantity(drink.id, -1)}
+                                                            className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold hover:bg-gray-200 transition-colors"
+                                                        >
+                                                            -
+                                                        </button>
+                                                        <span className="font-bold w-4 text-center text-sm">{drink.quantity}</span>
+                                                        <button
+                                                            onClick={() => updateExtraQuantity(drink.id, 1)}
+                                                            className="w-7 h-7 rounded-full bg-[#4A5D23] text-white flex items-center justify-center text-sm font-bold hover:bg-[#3a491c] shadow-lg shadow-[#4A5D23]/20 transition-all active:scale-95"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button onClick={() => updateExtraQuantity(drink.id, -1)} className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs hover:bg-gray-300">-</button>
-                                                    <span className="font-bold w-4 text-center text-xs">{drink.quantity}</span>
-                                                    <button onClick={() => updateExtraQuantity(drink.id, 1)} className="w-5 h-5 rounded-full bg-[#4A5D23] text-white flex items-center justify-center text-xs hover:bg-[#3a491c]">+</button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 

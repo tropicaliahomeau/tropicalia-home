@@ -146,17 +146,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className={styles.ctaSection}>
-        <div className={styles.ctaOverlay}></div>
-        <div className={styles.ctaContent}>
-          <h2 className={styles.ctaTitle}>Ready to Upgrade Your Lunch?</h2>
-          <p className={styles.ctaText}>
-            Join hundreds of happy customers enjoying the taste of paradise.
-            First week is 20% off!
+      {/* Marketing & Conversion: Come gratis con Tropicalia */}
+      <section className="bg-[#4A5D23] py-20 text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">Come gratis con Tropicalia</h2>
+          <p className="text-xl md:text-2xl mb-10 max-w-3xl mx-auto text-white/90">
+            Tu pasión por el sabor latino tiene premio. <br className="hidden md:block" />
+            Descubre cómo tu red de amigos puede desbloquear semanas de comida sin costo.
           </p>
-          <Link href="/register" className={styles.ctaButton}>
-            Get Started Today
+          <Link
+            href="/register"
+            className="inline-block bg-white text-[#4A5D23] px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-xl hover:shadow-white/20 transform hover:-translate-y-1"
+          >
+            Revelar el secreto
           </Link>
         </div>
       </section>

@@ -10,17 +10,24 @@ export default function Footer() {
                 <div className={styles.content}>
                     {/* Brand Column */}
                     <div className={styles.brandColumn}>
-                        <Link href="/" className={styles.logoLink}>
-                            <div className={styles.logoImageWrapper}>
-                                <img src="/logo-primary.jpeg" alt="Tropicalia Logo" className={styles.logoImage} />
-                            </div>
-                            <span className={styles.logoText}>
-                                Tropicalia<span className={styles.logoSuffix}>Home</span>
-                            </span>
-                        </Link>
-                        <p className={styles.tagline}>
-                            Fresh, healthy, and delicious lunches ready for pickup at our Footscray location. Experience the taste of the tropics daily.
-                        </p>
+                        <div className={styles.brandBranding}>
+                            <Link href="/" className={styles.logoLink}>
+                                <div className={styles.logoImageWrapper}>
+                                    <div className={styles.homeIconFooter}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                            <polyline points="9 22 9 12 15 12 15 22" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <span className={styles.logoText}>
+                                    Tropicalia<span className={styles.logoSuffix}>Home</span>
+                                </span>
+                            </Link>
+                            <p className={styles.tagline}>
+                                Fresh, healthy, and delicious lunches ready for pickup at our Footscray location.
+                            </p>
+                        </div>
                     </div>
 
                     {/* Quick Links */}

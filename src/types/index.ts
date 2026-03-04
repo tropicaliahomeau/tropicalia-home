@@ -8,6 +8,8 @@ export interface User {
     email: string;
     role: UserRole;
     phone?: string;
+    allergies?: string;
+    referralCount?: number;
 }
 
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes';
