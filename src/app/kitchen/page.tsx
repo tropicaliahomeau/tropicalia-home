@@ -1,245 +1,281 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Order } from '@/types';
+import React, { useState, useEffect } from 'react';
 
-// Mock Data for demonstration with Phones
-const INITIAL_ORDERS: (Order & { phone: string })[] = [
-    {
-        id: 101,
-        user_id: 1,
-        customer_name: "Juan Perez",
-        phone: "+57 300 123 4567",
-        status: 'preparing',
-        total_amount: 85,
-        items: [
-            { id: 1, day: 'Lunes', name: 'Bandeja Paisa', description: 'Traditional platter' },
-            { id: 2, day: 'Miércoles', name: 'Ajiaco', description: 'Potato soup' }
-        ],
-        delivery_method: 'delivery',
-        payment_method: 'auto',
-        created_at: new Date().toISOString(),
-        extras: [],
-        notes: "ALERGIA: Manipular con cuidado, alergia severa al MANÍ (Peanuts)."
-    },
-    {
-        id: 102,
-        user_id: 2,
-        customer_name: "Maria Rodriguez",
-        phone: "+57 310 987 6543",
-        status: 'pending',
-        total_amount: 72,
-        items: [
-            { id: 3, day: 'Martes', name: 'Sancocho', description: 'Hearty soup' }
-        ],
-        delivery_method: 'pickup',
-        payment_method: 'payid',
-        created_at: new Date().toISOString(),
-        extras: [{ name: 'Pony Malta', quantity: 2 }],
-        notes: ""
-    },
-    {
-        id: 103,
-        user_id: 3,
-        customer_name: "Carlos Gomez",
-        phone: "+57 315 555 1122",
-        status: 'preparing',
-        total_amount: 85,
-        items: [
-            { id: 1, day: 'Lunes', name: 'Bandeja Paisa', description: 'Traditional platter' },
-            { id: 4, day: 'Jueves', name: 'Mondongo', description: 'Tripe soup' }
-        ],
-        delivery_method: 'delivery',
-        payment_method: 'auto',
-        created_at: new Date().toISOString(),
-        extras: [],
-        notes: "Sin cilantro por favor."
-    }
-];
+// Pin Pad Component
+const PinPad = ({ onCorrectPin }: { onCorrectPin: () => void }) => {
+    const [pin, setPin] = useState('');
+    const [error, setError] = useState(false);
+    const CORRECT_PIN = '0421';
 
-export default function KitchenDashboard() {
-    const [orders, setOrders] = useState(INITIAL_ORDERS);
-    const [searchTerm, setSearchTerm] = useState('');
-
-    // Calculate Daily Counts
-    const dailyCounts = {
-        Lunes: 0,
-        Martes: 0,
-        Miércoles: 0,
-        Jueves: 0,
-        Viernes: 0
+    const handleInput = (num: string) => {
+        if (pin.length < 4) {
+            const newPin = pin + num;
+            setPin(newPin);
+            if (newPin.length === 4) {
+                if (newPin === CORRECT_PIN) {
+                    onCorrectPin();
+                } else {
+                    setError(true);
+                    setTimeout(() => {
+                        setPin('');
+                        setError(false);
+                    }, 1000);
+                }
+            }
+        }
     };
 
-    orders.forEach(order => {
-        order.items.forEach(item => {
-            if (item.day in dailyCounts) {
-                // @ts-ignore
-                dailyCounts[item.day]++;
-            }
-        });
-    });
+    return (
+        <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-[100] px-4">
+            <div className="max-w-xs w-full bg-white rounded-[2.5rem] p-8 shadow-2xl text-center">
+                <h2 className="text-2xl font-black text-gray-800 mb-2">Acceso Cocina</h2>
+                <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-8">Ingresa el PIN de Acceso</p>
 
-    const toggleStatus = (orderId: number) => {
-        setOrders(prev => prev.map(order => {
+                <div className="flex justify-center gap-4 mb-10">
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className={`w-4 h-4 rounded-full border-2 transition-all duration-300 ${pin.length > i ? 'bg-[#4A5D23] border-[#4A5D23] scale-125' : 'border-gray-200'
+                            } ${error ? 'bg-red-500 border-red-500 animate-shake' : ''}`}></div>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((btn, i) => (
+                        <button
+                            key={i}
+                            disabled={btn === ''}
+                            onClick={() => btn === '⌫' ? setPin(pin.slice(0, -1)) : handleInput(btn)}
+                            className={`h-16 rounded-2xl flex items-center justify-center text-xl font-black transition-all active:scale-90
+                            ${btn === '' ? 'opacity-0' : 'bg-gray-50 text-gray-800 hover:bg-gray-100'}`}
+                        >
+                            {btn}
+                        </button>
+                    ))}
+                </div>
+
+                {error && <p className="text-red-500 font-bold text-xs mt-6 uppercase tracking-widest animate-pulse">PIN Incorrecto</p>}
+            </div>
+            <p className="mt-8 text-gray-500 text-xs font-bold uppercase tracking-widest">Tropicalia Latin Food Australia</p>
+        </div>
+    );
+};
+
+export default function KitchenDashboard() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        // Load real orders from localStorage
+        const loadOrders = () => {
+            try {
+                const ordersJson = localStorage.getItem("tropicalia_orders") || "[]";
+                const usersJson = localStorage.getItem("tropicalia_all_users") || "[]";
+                const users = JSON.parse(usersJson);
+                const rawOrders = JSON.parse(ordersJson);
+
+                // Enrich orders with possible allergy info from user profile if not in order
+                const enriched = rawOrders.map((o: any) => {
+                    const user = users.find((u: any) => u.id === o.customerId || u.name === o.customer);
+                    return {
+                        ...o,
+                        phone: o.phone || user?.phone || 'N/A',
+                        allergies: o.allergies || user?.allergies || ''
+                    };
+                });
+
+                setOrders(enriched);
+            } catch (e) {
+                console.error("Error loading kitchen orders:", e);
+            }
+        };
+
+        loadOrders();
+        // Sync every 5 seconds
+        const interval = setInterval(loadOrders, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const toggleStatus = (orderId: string) => {
+        const newOrders = orders.map(order => {
             if (order.id === orderId) {
-                const newStatus = order.status === 'delivered' ? 'preparing' : 'delivered';
+                const newStatus = order.status.toLowerCase().includes('entregado') || order.status === 'Delivered' ? 'Preparing' : 'Delivered';
                 return { ...order, status: newStatus };
             }
             return order;
-        }));
+        });
+        setOrders(newOrders);
+        localStorage.setItem("tropicalia_orders", JSON.stringify(newOrders));
     };
 
-    // Filter Logic
-    const filteredOrders = orders.filter(order =>
-        order.phone.includes(searchTerm) ||
-        order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.id.toString().includes(searchTerm)
+    // Sorting: Pending first, Delivered last
+    const sortedOrders = [...orders].sort((a, b) => {
+        const aIsDone = a.status.toLowerCase().includes('entregado') || a.status === 'Delivered';
+        const bIsDone = b.status.toLowerCase().includes('entregado') || b.status === 'Delivered';
+        if (aIsDone === bIsDone) return 0;
+        return aIsDone ? 1 : -1;
+    });
+
+    const filteredOrders = sortedOrders.filter(order =>
+        (order.phone || '').includes(searchTerm) ||
+        (order.customer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.id || '').toString().includes(searchTerm)
     );
 
+    if (!isAuthenticated) {
+        return <PinPad onCorrectPin={() => setIsAuthenticated(true)} />;
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 p-6 font-sans">
-            {/* Header & Daily Summary */}
-            <header className="mb-8">
-                <div className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm mb-6 border border-gray-100 gap-4">
+        <div className="min-h-screen bg-[#F8F9FA] pb-20 font-sans">
+            {/* Header List View */}
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-800">Cocina 👨‍🍳</h1>
-                        <p className="text-gray-500">Gestión de Preparación y Entregas</p>
+                        <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                            Cocina <span className="text-[#4A5D23] animate-pulse">●</span>
+                        </h1>
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Lista Operativa de Pedidos</p>
                     </div>
 
-                    {/* Search Bar */}
-                    <div className="w-full md:w-96 relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                            </svg>
-                        </div>
+                    <div className="relative w-full md:w-96">
                         <input
                             type="text"
-                            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-[#4A5D23] focus:border-[#4A5D23] sm:text-sm transition-shadow"
-                            placeholder="Buscar por teléfono o nombre..."
+                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#4A5D23] transition-all font-medium text-sm"
+                            placeholder="Buscar por Teléfono o Cliente..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                    </div>
-
-                    <div className="bg-[#4A5D23] text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-green-900/20 whitespace-nowrap">
-                        {filteredOrders.length} / {orders.length}
-                    </div>
-                </div>
-
-                {/* Daily Counts Bar */}
-                <div className="grid grid-cols-5 gap-4">
-                    {Object.entries(dailyCounts).map(([day, count]) => (
-                        <div key={day} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
-                            <span className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">{day}</span>
-                            <span className="text-3xl font-bold text-[#4A5D23]">{count}</span>
-                            <span className="text-xs text-gray-400">platos</span>
+                        <div className="absolute left-3.5 top-3.5 text-gray-400">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         </div>
-                    ))}
+                    </div>
+
+                    <div className="flex gap-4">
+                        <div className="text-center bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pendientes</p>
+                            <p className="text-2xl font-black text-orange-500">
+                                {orders.filter(o => !o.status.toLowerCase().includes('entregado') && o.status !== 'Delivered').length}
+                            </p>
+                        </div>
+                        <div className="text-center bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Listos</p>
+                            <p className="text-2xl font-black text-[#4A5D23]">
+                                {orders.filter(o => o.status.toLowerCase().includes('entregado') || o.status === 'Delivered').length}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            {/* Orders Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredOrders.length === 0 ? (
-                    <div className="col-span-full text-center py-20 bg-white rounded-3xl border border-dashed border-gray-300">
-                        <p className="text-gray-400 text-lg">No se encontraron pedidos para "{searchTerm}"</p>
-                    </div>
-                ) : (
-                    filteredOrders.map((order) => (
-                        <div key={order.id} className={`bg-white rounded-2xl shadow-sm border transition-all duration-300 flex flex-col relative overflow-hidden
-                        ${order.status === 'delivered' ? 'opacity-60 grayscale-[0.5] border-gray-200' : 'border-gray-100 hover:shadow-lg hover:-translate-y-1'}
-                    `}>
-                            {/* Status Strip */}
-                            <div className={`h-2 w-full ${order.status === 'delivered' ? 'bg-green-500' : 'bg-yellow-400'}`}></div>
+            <main className="max-w-7xl mx-auto px-4 md:px-6 mt-8">
+                {/* Compact List Headers - Desktop Only */}
+                <div className="hidden lg:grid grid-cols-12 gap-4 px-6 mb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <div className="col-span-1"># Orden</div>
+                    <div className="col-span-2">Cliente</div>
+                    <div className="col-span-2">Teléfono</div>
+                    <div className="col-span-2">Alergias</div>
+                    <div className="col-span-3">Detalle Pedido</div>
+                    <div className="col-span-2 text-right">Acción</div>
+                </div>
 
-                            {/* Order Header */}
-                            <div className="p-5 flex justify-between items-start">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-bold text-xl text-gray-800">#{order.id}</span>
-                                        {order.delivery_method === 'delivery' ? (
-                                            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Domicilio</span>
-                                        ) : (
-                                            <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Recogida</span>
-                                        )}
+                <div className="space-y-3">
+                    {filteredOrders.map((order) => {
+                        const isDone = order.status.toLowerCase().includes('entregado') || order.status === 'Delivered';
+                        const hasAllergies = order.allergies && order.allergies.toLowerCase() !== 'ninguna' && order.allergies !== '';
+
+                        return (
+                            <div key={order.id} className={`bg-white rounded-[1.5rem] shadow-sm border transition-all ${isDone ? 'opacity-50 grayscale bg-gray-50 border-gray-200' : 'border-gray-100 hover:shadow-md'
+                                }`}>
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center p-4 md:p-5">
+                                    {/* Order # */}
+                                    <div className="lg:col-span-1 border-r border-gray-50 lg:pr-4">
+                                        <div className="flex items-center justify-between lg:block">
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase"># Orden</span>
+                                            <div className="font-black text-gray-800 text-lg">#{order.id}</div>
+                                        </div>
                                     </div>
-                                    <h3 className="font-bold text-lg text-gray-900 leading-tight">{order.customer_name}</h3>
-                                    {/* Contact Info */}
-                                    <a href={`tel:${order.phone}`} className="flex items-center gap-1.5 text-gray-500 text-sm mt-1 hover:text-[#4A5D23] transition-colors w-fit">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                        </svg>
-                                        {order.phone}
-                                    </a>
-                                </div>
-                                <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${order.status === 'delivered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                    }`}>
-                                    {order.status === 'delivered' ? 'Entregado' : 'Pendiente'}
-                                </span>
-                            </div>
 
-                            {/* ALERTA DE ALERGIAS */}
-                            {order.notes && (order.notes.toLowerCase().includes('alergia') || order.notes.toLowerCase().includes('allergy')) && (
-                                <div className="mx-5 mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                        <h4 className="font-extrabold text-red-700 uppercase text-xs tracking-wider">¡ALERTA DE ALERGIA!</h4>
+                                    {/* Customer */}
+                                    <div className="lg:col-span-2">
+                                        <div className="flex items-center justify-between lg:block">
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Cliente</span>
+                                            <div className="font-bold text-gray-900 truncate">{order.customer}</div>
+                                        </div>
                                     </div>
-                                    <p className="text-red-900 font-bold text-sm leading-snug">
-                                        {order.notes}
-                                    </p>
-                                </div>
-                            )}
 
-                            {/* Items List */}
-                            <div className="px-5 pb-4 flex-1">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 border-b border-gray-100 pb-2">Platos</h4>
-                                <ul className="space-y-4">
-                                    {order.items.map((item, idx) => (
-                                        <li key={`${order.id}-item-${idx}`} className="flex items-start gap-3">
-                                            <div className="w-6 h-6 rounded-full bg-[#4A5D23]/10 text-[#4A5D23] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                                                1
+                                    {/* Phone Link */}
+                                    <div className="lg:col-span-2">
+                                        <div className="flex items-center justify-between lg:block">
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Teléfono</span>
+                                            <a href={`tel:${order.phone}`} className="inline-flex items-center gap-1.5 text-[#4A5D23] font-black hover:text-[#3a491c] transition-colors bg-green-50/50 px-3 py-1.5 rounded-xl border border-green-100/50">
+                                                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>
+                                                {order.phone}
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {/* Allergies Highlight */}
+                                    <div className="lg:col-span-2">
+                                        <div className="flex items-center justify-between lg:block">
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Alergias</span>
+                                            <div className={`font-black text-[10px] uppercase px-3 py-1.5 rounded-xl inline-block border ${hasAllergies
+                                                ? 'bg-red-50 text-red-600 border-red-200 animate-pulse ring-4 ring-red-50'
+                                                : 'bg-gray-50 text-gray-300 border-gray-100'
+                                                }`}>
+                                                {hasAllergies ? order.allergies : 'Sin Alergias'}
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Order Detail */}
+                                    <div className="lg:col-span-3">
+                                        <div className="flex items-center justify-between lg:block">
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Detalle</span>
                                             <div>
-                                                <p className="font-bold text-gray-800 text-sm">{item.name}</p>
-                                                <p className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block mt-1">{item.day}</p>
+                                                <p className="text-sm font-bold text-gray-900 leading-tight">{order.meal}</p>
+                                                {order.extras && order.extras.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {order.extras.map((e: any, idx: number) => (
+                                                            <span key={idx} className="text-[9px] font-black text-[#4A5D23] bg-green-50 px-2 py-0.5 rounded-md border border-green-100 uppercase">
+                                                                {e.quantity}x {e.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                                        </div>
+                                    </div>
 
-                            {/* Action Footer */}
-                            <div className="p-4 bg-gray-50 border-t border-gray-100 mt-auto">
-                                <button
-                                    onClick={() => toggleStatus(order.id)}
-                                    className={`w-full py-3 rounded-xl font-bold text-sm transition-all transform active:scale-95 flex items-center justify-center gap-2
-                                    ${order.status === 'delivered'
-                                            ? 'bg-white border-2 border-gray-200 text-gray-400 hover:bg-gray-100'
-                                            : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-md hover:shadow-lg'
-                                        }`}
-                                >
-                                    {order.status === 'delivered' ? (
-                                        <>
-                                            <span>Revertir a Pendiente</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span>Marcar Entregado</span>
-                                        </>
-                                    )}
-                                </button>
+                                    {/* Actions */}
+                                    <div className="lg:col-span-2 flex justify-end">
+                                        <button
+                                            onClick={() => toggleStatus(order.id)}
+                                            className={`w-full lg:w-fit px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95
+                                            ${isDone
+                                                    ? 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                                    : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-[0_10px_20px_-5px_rgba(74,93,35,0.3)] hover:shadow-[0_15px_25px_-5px_rgba(74,93,35,0.4)]'
+                                                }`}
+                                        >
+                                            {isDone ? 'Revertir' : 'Entregado'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
+                        );
+                    })}
+
+                    {filteredOrders.length === 0 && (
+                        <div className="text-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100">
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                            </div>
+                            <h3 className="text-lg font-black text-gray-800">Cero Pedidos</h3>
+                            <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">No hay actividad para mostrar en este momento</p>
                         </div>
-                    ))
-                )}
-            </div>
+                    )}
+                </div>
+            </main>
         </div>
     );
 }

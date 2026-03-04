@@ -190,11 +190,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         router.push("/");
     };
 
-    const [allOrders, setAllOrders] = useState<Order[]>([
-        { id: "TH-1001", customer: "João Silva", meal: "Feijoada Completa", status: "Pending", customerId: "client1", date: "2026-03-01" },
-        { id: "TH-1002", customer: "Maria Souza", meal: "Grilled Chicken Salad", status: "Ready", customerId: "client2", date: "2026-03-02" },
-        { id: "TH-1003", customer: "Pedro Santos", meal: "Fish Tacos", status: "Pending", customerId: "client3", date: "2026-03-03" },
-    ]);
+    const [allOrders, setAllOrders] = useState<Order[]>([]);
 
     const updateOrderStatus = (id: string, status: string) => {
         setAllOrders(prev => prev.map(order =>
