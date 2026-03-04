@@ -25,7 +25,7 @@ export default function StaffDashboard() {
     }, [user, isLoading, router]);
 
 
-    const updateStatus = (id: number, newStatus: string) => {
+    const updateStatus = (id: string, newStatus: string) => {
         updateOrderStatus(id, newStatus);
     };
 
