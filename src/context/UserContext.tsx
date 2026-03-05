@@ -262,16 +262,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
         };
 
         // Update User History/Context
-        const finalSubscriptionWithId = { ...finalSubscription, orderId };
-        const updatedUserFinal = { ...user, subscription: finalSubscriptionWithId };
-        setUser(updatedUserFinal);
-        localStorage.setItem("tropicalia_user", JSON.stringify(updatedUserFinal));
+        try {
+            const finalSubscriptionWithId = { ...finalSubscription, orderId };
+            const updatedUserFinal = { ...user, subscription: finalSubscriptionWithId };
+            setUser(updatedUserFinal);
+            localStorage.setItem("tropicalia_user", JSON.stringify(updatedUserFinal));
 
-        setAllOrders(prev => {
-            const updated = [...prev, newOrder];
-            localStorage.setItem("tropicalia_orders", JSON.stringify(updated));
-            return updated;
-        });
+            setAllOrders(prev => {
+                const updated = [...prev, newOrder];
+                try {
+                    localStorage.setItem("tropicalia_orders", JSON.stringify(updated));
+                } catch (e) {
+                    console.error("Storage limit exceeded for orders:", e);
+                    // Fallback: still update state but warn
+                }
+                return updated;
+            });
+        } catch (e) {
+            console.error("Critical Storage Error:", e);
+            alert("⚠️ Error de Almacenamiento: El comprobante es demasiado pesado o el historial está lleno. Por favor, intenta con una imagen más pequeña o limpia el caché del navegador.");
+        }
     };
 
     return (

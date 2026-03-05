@@ -23,6 +23,7 @@ export default function MenuPage() {
     // Payment State
     const [paymentMethod, setPaymentMethod] = useState<'auto' | 'payid'>('payid');
     const [payIdProofBase64, setPayIdProofBase64] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -84,7 +85,7 @@ export default function MenuPage() {
         }));
     };
 
-    const handleSubscribe = () => {
+    const handleSubscribe = async () => {
         if (!user) {
             alert("Please log in to subscribe!");
             router.push('/login');
@@ -92,28 +93,41 @@ export default function MenuPage() {
         }
 
         if (paymentMethod === 'payid' && !payIdProofBase64) {
-            return; // Button is disabled, but guard for safety
+            return;
         }
 
-        const orderDetails: Subscription = {
-            status: 'Pending Validation',
-            planName: `${selectedMeals.length} Días (${isFullWeek ? 'Semana Completa' : 'Flexible'})`,
-            meals: selectedMeals,
-            extras: extras.filter(e => e.quantity > 0),
-            total,
-            paymentMethod: paymentMethod as 'auto' | 'payid',
-            payIdProof: payIdProofBase64
-        };
+        setIsProcessing(true);
 
-        console.log("Processing Order:", orderDetails);
-        updateSubscription(orderDetails);
+        try {
+            const orderDetails: Subscription = {
+                status: 'Pending Validation',
+                planName: `${selectedMeals.length} Días (${isFullWeek ? 'Semana Completa' : 'Flexible'})`,
+                meals: selectedMeals,
+                extras: extras.filter(e => e.quantity > 0),
+                total,
+                paymentMethod: paymentMethod as 'auto' | 'payid',
+                payIdProof: payIdProofBase64
+            };
 
-        const confirmMsg = paymentMethod === 'payid'
-            ? `✅ Pago recibido. Tu pedido está PENDIENTE de aprobación por parte del administrador. Total: $${total}`
-            : `✅ ¡Suscripción confirmada! Total: $${total}`;
+            console.log("Processing Order:", orderDetails);
 
-        alert(confirmMsg);
-        router.push('/dashboard');
+            // Give a tiny delay for the UI to show 'Processing'
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            updateSubscription(orderDetails);
+
+            const confirmMsg = paymentMethod === 'payid'
+                ? `✅ Pago enviado. Tu pedido está PENDIENTE de aprobación por parte de Ish (Admin). Total: $${total}`
+                : `✅ ¡Suscripción confirmada! Total: $${total}`;
+
+            alert(confirmMsg);
+            router.push('/dashboard');
+        } catch (error) {
+            console.error("Order process error:", error);
+            alert("❌ Hubo un error al procesar tu pedido. Por favor intenta de nuevo.");
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     return (
@@ -292,15 +306,22 @@ export default function MenuPage() {
                                                 </p>
                                             </div>
                                             <button
+                                                onClick={handleSubscribe}
+                                                disabled={!payIdProofBase64 || isProcessing}
                                                 className={`px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg text-sm whitespace-nowrap
-                                                    ${!payIdProofBase64
+                                                    ${(!payIdProofBase64 || isProcessing)
                                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
                                                         : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-[#4A5D23]/20'
                                                     }`}
-                                                disabled={!payIdProofBase64}
-                                                onClick={handleSubscribe}
                                             >
-                                                Finalizar Pedido →
+                                                {isProcessing ? (
+                                                    <>
+                                                        <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin inline-block mr-2"></div>
+                                                        Procesando...
+                                                    </>
+                                                ) : (
+                                                    <>Finalizar Pedido →</>
+                                                )}
                                             </button>
                                         </div>
 
