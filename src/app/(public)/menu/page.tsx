@@ -21,7 +21,7 @@ export default function MenuPage() {
     ]);
 
     // Payment State
-    const [paymentMethod, setPaymentMethod] = useState<'auto' | 'payid'>('auto');
+    const [paymentMethod, setPaymentMethod] = useState<'auto' | 'payid'>('payid');
     const [payIdProofBase64, setPayIdProofBase64] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,42 +313,41 @@ export default function MenuPage() {
                                                 <span>Pago Seguro vía PayID</span>
                                             </div>
                                         </div>
-                                        {paymentMethod === 'payid' && (
-                                            <div className="mt-2 p-4 bg-[#FFF8F0] rounded-xl border border-orange-200 text-[11px] space-y-3 shadow-sm">
-                                                <div className="bg-orange-100 p-2 rounded-lg font-black text-orange-800 uppercase tracking-tighter text-center">
-                                                    Pasos para pagar con PayID
-                                                </div>
+                                        {/* Instructions & Upload Area (Always visible for PayID) */}
+                                        <div className="mt-2 p-4 bg-[#FFF8F0] rounded-xl border border-orange-200 text-[11px] space-y-3 shadow-sm">
+                                            <div className="bg-orange-100 p-2 rounded-lg font-black text-orange-800 uppercase tracking-tighter text-center">
+                                                Pasos para pagar con PayID
+                                            </div>
 
-                                                <div className="space-y-2">
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">1</span>
-                                                        <p>Transfiere el total a: <span className="font-bold text-gray-800">tropicaliahome.au@gmail.com</span></p>
-                                                    </div>
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">2</span>
-                                                        <p>Usa tu <span className="font-bold text-gray-800">número de teléfono</span> como referencia del pago.</p>
-                                                    </div>
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">3</span>
-                                                        <p>Sube una <span className="font-bold text-gray-800">captura de pantalla</span> del comprobante aquí abajo.</p>
-                                                    </div>
+                                            <div className="space-y-2">
+                                                <div className="flex items-start gap-2">
+                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">1</span>
+                                                    <p>Transfiere el total a: <span className="font-bold text-gray-800">tropicaliahome.au@gmail.com</span></p>
                                                 </div>
-
-                                                <div className="pt-2 border-t border-orange-100">
-                                                    <p className="font-bold text-gray-700 mb-2 flex items-center gap-1">
-                                                        📸 Adjuntar Comprobante:
-                                                    </p>
-                                                    <div className="relative group">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
-                                                            onChange={handleFileChange}
-                                                        />
-                                                    </div>
+                                                <div className="flex items-start gap-2">
+                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">2</span>
+                                                    <p>Usa tu <span className="font-bold text-gray-800">número de teléfono</span> como referencia del pago.</p>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">3</span>
+                                                    <p>Sube una <span className="font-bold text-gray-800">captura de pantalla</span> del comprobante aquí abajo.</p>
                                                 </div>
                                             </div>
-                                        )}
+
+                                            <div className="pt-2 border-t border-orange-100">
+                                                <p className="font-bold text-gray-700 mb-2 flex items-center gap-1">
+                                                    📸 Adjuntar Comprobante:
+                                                </p>
+                                                <div className="relative group">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
+                                                        onChange={handleFileChange}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
