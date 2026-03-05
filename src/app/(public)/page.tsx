@@ -9,8 +9,8 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={styles.heroBackground}>
           <Image
-            src="/hero-new.jpg"
-            alt="Delicious Tropical Lunch"
+            src="/hero-hd.jpg"
+            alt="Tropicalia Home Latin Food"
             fill
             className={styles.heroImage}
             priority
