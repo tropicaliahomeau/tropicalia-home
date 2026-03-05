@@ -35,9 +35,7 @@ export default function AdminLoginPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label htmlFor="code" className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
-                            Código de Seguridad (2FA)
-                        </label>
+                        Código de Seguridad
                         <input
                             type="password"
                             id="code"

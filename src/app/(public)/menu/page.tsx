@@ -152,7 +152,7 @@ export default function MenuPage() {
                                     onClick={() => setSelectedMeals([])}
                                     className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
-                                    Días Sueltos
+                                    Por Días
                                 </button>
                                 <button
                                     onClick={() => {
@@ -322,14 +322,18 @@ export default function MenuPage() {
                                             <div className="space-y-2">
                                                 <div className="flex items-start gap-2">
                                                     <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">1</span>
-                                                    <p>Transfiere el total a: <span className="font-bold text-gray-800">tropicaliahome.au@gmail.com</span></p>
+                                                    <p>Escoge tipo de pago por <span className="font-bold text-gray-800">"Email"</span>.</p>
                                                 </div>
                                                 <div className="flex items-start gap-2">
                                                     <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">2</span>
-                                                    <p>Usa tu <span className="font-bold text-gray-800">número de teléfono</span> como referencia del pago.</p>
+                                                    <p>Transfiere el total a: <span className="font-bold text-gray-800">tropicaliahome.au@gmail.com</span></p>
                                                 </div>
                                                 <div className="flex items-start gap-2">
                                                     <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">3</span>
+                                                    <p>Usa tu <span className="font-bold text-gray-800">número de teléfono</span> como referencia del pago.</p>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">4</span>
                                                     <p>Sube una <span className="font-bold text-gray-800">captura de pantalla</span> del comprobante aquí abajo.</p>
                                                 </div>
                                             </div>
