@@ -270,15 +270,15 @@
 }
 
 /* Fix for mobile text visibility in inputs */
-input,
-textarea,
-select {
+:global(input),
+:global(textarea),
+:global(select) {
   color: #1f2937 !important;
   /* Dark gray/black for visibility */
 }
 
-input::placeholder,
-textarea::placeholder {
+:global(input::placeholder),
+:global(textarea::placeholder) {
   color: #9ca3af !important;
 }
 
