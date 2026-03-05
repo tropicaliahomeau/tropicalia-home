@@ -12,6 +12,7 @@ export default function MenuPage() {
     const router = useRouter();
     const [selectedWeekId, setSelectedWeekId] = useState<string>(MENUS[0].id);
     const [selectedMeals, setSelectedMeals] = useState<number[]>([]);
+    const [activeView, setActiveView] = useState<'food' | 'drinks'>('food');
 
     // Extras State
     const [extras, setExtras] = useState<{ id: string, name: string, price: number, quantity: number }[]>([
@@ -163,21 +164,32 @@ export default function MenuPage() {
                         <>
                             <div className="flex bg-gray-100 p-1 rounded-full border border-gray-200 shadow-inner">
                                 <button
-                                    onClick={() => setSelectedMeals([])}
+                                    onClick={() => {
+                                        setActiveView('food');
+                                        setSelectedMeals([]);
+                                    }}
                                     disabled={!!payIdProofBase64}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeView === 'food' && selectedMeals.length === 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     Por Días
                                 </button>
                                 <button
                                     onClick={() => {
+                                        setActiveView('food');
                                         const allMealIds = currentMenu.meals.map(m => m.id);
                                         setSelectedMeals(allMealIds);
                                     }}
                                     disabled={!!payIdProofBase64}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 5 ? 'bg-[#4A5D23] text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeView === 'food' && selectedMeals.length > 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     Semana Completa
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('drinks')}
+                                    disabled={!!payIdProofBase64}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeView === 'drinks' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    Bebidas
                                 </button>
                             </div>
                             <p className="text-sm text-gray-500">
@@ -191,69 +203,104 @@ export default function MenuPage() {
                     )}
                 </div>
 
-                {/* Meals Grid - More Compact with Borders */}
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-24">
-                    {currentMenu.meals.map((meal) => (
-                        <div
-                            key={meal.id}
-                            onClick={() => toggleMeal(meal.id)}
-                            className={`
-                                relative bg-white rounded-xl overflow-hidden border transition-all duration-300 cursor-pointer group
-                                ${selectedMeals.includes(meal.id) ? 'border-[#4A5D23] ring-1 ring-[#4A5D23] shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'}
-                                ${!isOrderingEnabled || !!payIdProofBase64 ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
-                            `}
-                        >
-                            {/* Header Tag */}
-                            <div className="bg-[#4A5D23] text-white text-center py-1 text-sm font-bold tracking-wide">
-                                {meal.day}
-                            </div>
+                {/* Selection Grids */}
+                {activeView === 'food' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-24">
+                        {currentMenu.meals.map((meal) => (
+                            <div
+                                key={meal.id}
+                                onClick={() => toggleMeal(meal.id)}
+                                className={`
+                                    relative bg-white rounded-xl overflow-hidden border transition-all duration-300 cursor-pointer group
+                                    ${selectedMeals.includes(meal.id) ? 'border-[#4A5D23] ring-1 ring-[#4A5D23] shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'}
+                                    ${!isOrderingEnabled || !!payIdProofBase64 ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
+                                `}
+                            >
+                                {/* Header Tag */}
+                                <div className="bg-[#4A5D23] text-white text-center py-1 text-sm font-bold tracking-wide">
+                                    {meal.day}
+                                </div>
 
-                            {/* Image */}
-                            <div className="relative h-40 w-full bg-gray-100">
-                                <Image
-                                    src={meal.image}
-                                    alt={meal.title}
-                                    fill
-                                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 20vw"
-                                />
-                                {selectedMeals.includes(meal.id) && (
-                                    <div className="absolute inset-0 bg-[#4A5D23]/40 flex items-center justify-center backdrop-blur-[2px] animate-fade-in">
-                                        <div className="bg-white text-[#4A5D23] rounded-full p-2 shadow-xl transform scale-110">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
+                                {/* Image */}
+                                <div className="relative h-40 w-full bg-gray-100">
+                                    <Image
+                                        src={meal.image}
+                                        alt={meal.title}
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 20vw"
+                                    />
+                                    {selectedMeals.includes(meal.id) && (
+                                        <div className="absolute inset-0 bg-[#4A5D23]/40 flex items-center justify-center backdrop-blur-[2px] animate-fade-in">
+                                            <div className="bg-white text-[#4A5D23] rounded-full p-2 shadow-xl transform scale-110">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-3 flex flex-col h-full">
+                                    <h3 className="font-bold text-gray-800 text-sm mb-1 leading-tight min-h-[2.5em] group-hover:text-[#4A5D23] transition-colors">{meal.title}</h3>
+                                    <p className="text-xs text-gray-500 line-clamp-2 mb-3 h-8">{meal.description}</p>
+
+                                    {isOrderingEnabled ? (
+                                        <button
+                                            className={`w-full py-1.5 rounded-lg text-xs font-bold transition-all mt-auto border
+                                                ${selectedMeals.includes(meal.id)
+                                                    ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                                                    : 'bg-white border-gray-300 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleMeal(meal.id);
+                                            }}
+                                            disabled={!!payIdProofBase64} // Disable if proof exists
+                                        >
+                                            {selectedMeals.includes(meal.id) ? 'Quitar' : 'Seleccionar'}
+                                        </button>
+                                    ) : (
+                                        <div className="mt-auto pt-2 text-center text-[10px] font-bold text-gray-400 uppercase">Agotado</div>
+                                    )}
+                                </div>
                             </div>
-
-                            {/* Content */}
-                            <div className="p-3 flex flex-col h-full">
-                                <h3 className="font-bold text-gray-800 text-sm mb-1 leading-tight min-h-[2.5em] group-hover:text-[#4A5D23] transition-colors">{meal.title}</h3>
-                                <p className="text-xs text-gray-500 line-clamp-2 mb-3 h-8">{meal.description}</p>
-
-                                {isOrderingEnabled ? (
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
+                        {extras.map(extra => (
+                            <div key={extra.id} className="flex flex-col p-8 bg-white rounded-[2.5rem] border border-gray-100 hover:border-blue-100 transition-all shadow-sm group">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🥤</div>
+                                    <span className="font-black text-blue-600 text-xl">${extra.price.toFixed(2)}</span>
+                                </div>
+                                <h3 className="font-black text-gray-800 text-lg mb-4">{extra.name}</h3>
+                                <div className="flex items-center justify-between mt-auto bg-gray-50 p-2 rounded-2xl">
                                     <button
-                                        className={`w-full py-1.5 rounded-lg text-xs font-bold transition-all mt-auto border
-                                            ${selectedMeals.includes(meal.id)
-                                                ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                                                : 'bg-white border-gray-300 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleMeal(meal.id);
-                                        }}
-                                        disabled={!!payIdProofBase64} // Disable if proof exists
+                                        onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, -1)}
+                                        disabled={!!payIdProofBase64}
+                                        className={`w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-all active:scale-95 ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
-                                        {selectedMeals.includes(meal.id) ? 'Quitar' : 'Seleccionar'}
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
+                                        </svg>
                                     </button>
-                                ) : (
-                                    <span className="block text-center text-xs text-gray-400 mt-auto py-1.5 bg-gray-50 rounded-lg border border-gray-100">No disponible</span>
-                                )}
+                                    <span className="font-black text-2xl text-gray-900 w-8 text-center">{extra.quantity}</span>
+                                    <button
+                                        onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, 1)}
+                                        disabled={!!payIdProofBase64}
+                                        className={`w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-[#4A5D23] transition-all active:scale-95 ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Footer Cart (Sticky) */}
                 {selectedMeals.length > 0 && isOrderingEnabled && (
@@ -384,44 +431,6 @@ export default function MenuPage() {
                             </div>
                         </div>
 
-                        {/* Dedicated Beverages Section */}
-                        <div className="mt-12 bg-white rounded-[3rem] p-10 border border-warm-gray-100 shadow-sm">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl">🥤</div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Bebidas & Extras</h2>
-                                    <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Añade bebidas a tu pedido (o pide solo bebidas)</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {extras.map(extra => (
-                                    <div key={extra.id} className="flex flex-col p-6 bg-gray-50 rounded-3xl border border-transparent hover:border-blue-100 transition-all">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <span className="font-bold text-gray-800">{extra.name}</span>
-                                            <span className="font-black text-blue-600">${extra.price.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <button
-                                                onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, -1)}
-                                                disabled={!!payIdProofBase64}
-                                                className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-colors ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            >
-                                                -
-                                            </button>
-                                            <span className="font-black text-lg text-gray-900">{extra.quantity}</span>
-                                            <button
-                                                onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, 1)}
-                                                disabled={!!payIdProofBase64}
-                                                className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-[#4A5D23] transition-colors ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 )}
             </div>
