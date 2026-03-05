@@ -20,6 +20,11 @@ export default function DashboardPage() {
     const [tempExpenses, setTempExpenses] = React.useState<{ reason: string, amount: string }[]>(
         Array(5).fill({ reason: '', amount: '' })
     );
+    const [detailModal, setDetailModal] = React.useState<{ show: boolean, type: 'ingresos' | 'gastos', data: any[] }>({
+        show: false,
+        type: 'ingresos',
+        data: []
+    });
     const [realKpis, setRealKpis] = React.useState({
         totalOrders: 0,
         deliveredOrders: 0,
@@ -263,11 +268,33 @@ export default function DashboardPage() {
                     {/* Macro Strategic Grid */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="bg-gray-900 p-6 rounded-[2rem] text-white">
-                            <p className="text-[10px] font-black text-gray-500 uppercase mb-2">Ingreso Bruto</p>
+                            <div className="flex justify-between items-start mb-2">
+                                <p className="text-[10px] font-black text-gray-500 uppercase">Ingreso Bruto</p>
+                                <button
+                                    onClick={() => {
+                                        const orders = JSON.parse(localStorage.getItem("tropicalia_orders") || "[]");
+                                        setDetailModal({ show: true, type: 'ingresos', data: orders });
+                                    }}
+                                    className="text-[9px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg font-bold transition-all"
+                                >
+                                    Ver Detalle
+                                </button>
+                            </div>
                             <div className="text-3xl font-black">${realKpis.totalRevenue.toLocaleString()}</div>
                         </div>
                         <div className="bg-white p-6 rounded-[2rem] border border-gray-100">
-                            <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Gastos (Est.)</p>
+                            <div className="flex justify-between items-start mb-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase">Gastos (Est.)</p>
+                                <button
+                                    onClick={() => {
+                                        const expenses = JSON.parse(localStorage.getItem("tropicalia_expenses") || "[]");
+                                        setDetailModal({ show: true, type: 'gastos', data: expenses });
+                                    }}
+                                    className="text-[9px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-lg font-bold text-gray-600 transition-all"
+                                >
+                                    Ver Detalle
+                                </button>
+                            </div>
                             <div className="text-3xl font-black text-red-500">${realKpis.totalExpenses.toLocaleString()}</div>
                         </div>
                         <div className="bg-white p-6 rounded-[2rem] border border-gray-100">
@@ -324,6 +351,103 @@ export default function DashboardPage() {
                     </div>
                 </div>
             )}
+            {/* Detail Modal */}
+            {detailModal.show && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-scale-up">
+                        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-[2.5rem]">
+                            <div>
+                                <h3 className="text-2xl font-black text-gray-900 capitalize">Detalle de {detailModal.type}</h3>
+                                <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">Registros Históricos</p>
+                            </div>
+                            <button
+                                onClick={() => setDetailModal({ ...detailModal, show: false })}
+                                className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center hover:bg-gray-100 transition-all font-bold"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-8">
+                            <div className="space-y-3">
+                                {detailModal.data.length > 0 ? (
+                                    detailModal.data.map((item: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition-all">
+                                            <div>
+                                                <p className="font-bold text-gray-900">{detailModal.type === 'ingresos' ? item.customer : item.reason}</p>
+                                                <p className="text-[10px] text-gray-500 font-medium">{new Date(item.date).toLocaleDateString()} • {detailModal.type === 'ingresos' ? item.meal : 'Gasto Semanal'}</p>
+                                            </div>
+                                            <div className={`font-black ${detailModal.type === 'ingresos' ? 'text-green-600' : 'text-red-500'}`}>
+                                                {detailModal.type === 'ingresos' ? '+' : '-'}${parseFloat(item.total || item.amount).toFixed(2)}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-center py-10 text-gray-400 italic">No hay registros aún.</p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="p-6 bg-gray-50/50 rounded-b-[2.5rem] border-t border-gray-100 text-center">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total en esta vista: ${detailModal.data.reduce((sum, i) => sum + parseFloat(i.total || i.amount || 0), 0).toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Expenses Modal */}
+            {showExpensesModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-up p-8">
+                        <div className="mb-8">
+                            <h3 className="text-2xl font-black text-gray-900">Registrar Gastos de la Semana</h3>
+                            <p className="text-gray-500 font-medium">Define los costos para calcular tu margen neto</p>
+                        </div>
+
+                        <div className="space-y-3 max-h-[50vh] overflow-auto mb-6 pr-2">
+                            {tempExpenses.map((exp, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Motivo..."
+                                        value={exp.reason}
+                                        onChange={(e) => handleExpenseChange(idx, 'reason', e.target.value)}
+                                        className="flex-1 bg-gray-50 border-none rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-[#4A5D23] transition-all"
+                                    />
+                                    <input
+                                        type="number"
+                                        placeholder="$"
+                                        value={exp.amount}
+                                        onChange={(e) => handleExpenseChange(idx, 'amount', e.target.value)}
+                                        className="w-24 bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-red-600 focus:ring-2 focus:ring-[#4A5D23] transition-all"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={addExpenseRow}
+                            className="w-full py-3 mb-8 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold hover:bg-gray-50 transition-all text-sm"
+                        >
+                            (+) Agregar más gastos
+                        </button>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setShowExpensesModal(false)}
+                                className="flex-1 py-4 rounded-2xl font-bold text-gray-500 hover:bg-gray-50 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={saveExpenses}
+                                className="flex-1 py-4 bg-[#4A5D23] text-white rounded-2xl font-black shadow-xl shadow-green-900/20 hover:bg-[#3a491c] transition-all"
+                            >
+                                Guardar Gastos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Proof Modal Overlay */}
             {selectedProof && (
                 <div

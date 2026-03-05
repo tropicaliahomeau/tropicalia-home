@@ -12,11 +12,10 @@ export default function AdminLoginPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Point #1: Double Factor Security Code
         if (code === '947962') {
-            // Set cookie for middleware - 12 hours session
             document.cookie = "admin_auth=true; path=/; max-age=43200";
-            router.push('/admin/dashboard');
+            // Immediate redirection
+            window.location.href = '/admin/dashboard';
         } else {
             setError('Código de seguridad incorrecto. Acceso denegado.');
         }

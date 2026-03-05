@@ -164,7 +164,8 @@ export default function MenuPage() {
                             <div className="flex bg-gray-100 p-1 rounded-full border border-gray-200 shadow-inner">
                                 <button
                                     onClick={() => setSelectedMeals([])}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    disabled={!!payIdProofBase64}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     Por Días
                                 </button>
@@ -173,7 +174,8 @@ export default function MenuPage() {
                                         const allMealIds = currentMenu.meals.map(m => m.id);
                                         setSelectedMeals(allMealIds);
                                     }}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 5 ? 'bg-[#4A5D23] text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    disabled={!!payIdProofBase64}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 5 ? 'bg-[#4A5D23] text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     Semana Completa
                                 </button>
@@ -198,7 +200,7 @@ export default function MenuPage() {
                             className={`
                                 relative bg-white rounded-xl overflow-hidden border transition-all duration-300 cursor-pointer group
                                 ${selectedMeals.includes(meal.id) ? 'border-[#4A5D23] ring-1 ring-[#4A5D23] shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'}
-                                ${!isOrderingEnabled ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
+                                ${!isOrderingEnabled || !!payIdProofBase64 ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
                             `}
                         >
                             {/* Header Tag */}
@@ -241,6 +243,7 @@ export default function MenuPage() {
                                             e.stopPropagation();
                                             toggleMeal(meal.id);
                                         }}
+                                        disabled={!!payIdProofBase64} // Disable if proof exists
                                     >
                                         {selectedMeals.includes(meal.id) ? 'Quitar' : 'Seleccionar'}
                                     </button>
@@ -274,6 +277,7 @@ export default function MenuPage() {
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => updateExtraQuantity(drink.id, -1)}
+                                                            disabled={!!payIdProofBase64} // Disable if proof exists
                                                             className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold hover:bg-gray-200 transition-colors"
                                                         >
                                                             -
@@ -281,6 +285,7 @@ export default function MenuPage() {
                                                         <span className="font-bold w-4 text-center text-sm">{drink.quantity}</span>
                                                         <button
                                                             onClick={() => updateExtraQuantity(drink.id, 1)}
+                                                            disabled={!!payIdProofBase64} // Disable if proof exists
                                                             className="w-7 h-7 rounded-full bg-[#4A5D23] text-white flex items-center justify-center text-sm font-bold hover:bg-[#3a491c] shadow-lg shadow-[#4A5D23]/20 transition-all active:scale-95"
                                                         >
                                                             +
@@ -369,12 +374,52 @@ export default function MenuPage() {
                                                         accept="image/*"
                                                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
                                                         onChange={handleFileChange}
+                                                        disabled={!!payIdProofBase64} // Disable if proof exists
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Dedicated Beverages Section */}
+                        <div className="mt-12 bg-white rounded-[3rem] p-10 border border-warm-gray-100 shadow-sm">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl">🥤</div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Bebidas & Extras</h2>
+                                    <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Añade bebidas a tu pedido (o pide solo bebidas)</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {extras.map(extra => (
+                                    <div key={extra.id} className="flex flex-col p-6 bg-gray-50 rounded-3xl border border-transparent hover:border-blue-100 transition-all">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="font-bold text-gray-800">{extra.name}</span>
+                                            <span className="font-black text-blue-600">${extra.price.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-auto">
+                                            <button
+                                                onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, -1)}
+                                                disabled={!!payIdProofBase64}
+                                                className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-colors ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            >
+                                                -
+                                            </button>
+                                            <span className="font-black text-lg text-gray-900">{extra.quantity}</span>
+                                            <button
+                                                onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, 1)}
+                                                disabled={!!payIdProofBase64}
+                                                className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-[#4A5D23] transition-colors ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
