@@ -16,6 +16,10 @@ const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: fals
 export default function DashboardPage() {
     const [activeTab, setActiveTab] = React.useState<'hoy' | 'macro'>('hoy');
     const [selectedProof, setSelectedProof] = React.useState<string | null>(null);
+    const [showExpensesModal, setShowExpensesModal] = React.useState(false);
+    const [tempExpenses, setTempExpenses] = React.useState<{ reason: string, amount: string }[]>(
+        Array(5).fill({ reason: '', amount: '' })
+    );
     const [realKpis, setRealKpis] = React.useState({
         totalOrders: 0,
         deliveredOrders: 0,
@@ -102,6 +106,24 @@ export default function DashboardPage() {
         } catch (e) { alert("Error al generar reporte"); }
     };
 
+    const addExpenseRow = () => {
+        setTempExpenses([...tempExpenses, { reason: '', amount: '' }]);
+    };
+
+    const handleExpenseChange = (index: number, field: 'reason' | 'amount', value: string) => {
+        const updated = [...tempExpenses];
+        updated[index] = { ...updated[index], [field]: value };
+        setTempExpenses(updated);
+    };
+
+    const saveExpenses = () => {
+        const validExpenses = tempExpenses.filter(e => e.reason && e.amount);
+        const saved = JSON.parse(localStorage.getItem('tropicalia_expenses') || '[]');
+        localStorage.setItem('tropicalia_expenses', JSON.stringify([...saved, ...validExpenses.map(e => ({ ...e, amount: parseFloat(e.amount), date: new Date().toISOString() }))]));
+        setShowExpensesModal(false);
+        window.location.reload();
+    };
+
     return (
         <div className="space-y-6 pb-12 animate-fade-in px-2 md:px-0">
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -115,6 +137,12 @@ export default function DashboardPage() {
                         className="flex-1 md:flex-none px-4 py-2 border-2 border-gray-200 rounded-2xl font-bold text-gray-600 hover:bg-gray-50 transition-all text-sm"
                     >
                         Reporte Inactividad
+                    </button>
+                    <button
+                        onClick={() => setShowExpensesModal(true)}
+                        className="flex-1 md:flex-none px-4 py-2 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all text-sm flex items-center gap-2 justify-center"
+                    >
+                        <span>Registrar Gastos</span>
                     </button>
                     <button className="flex-1 md:flex-none px-4 py-2 bg-[#4A5D23] text-white rounded-2xl font-bold hover:shadow-lg hover:shadow-green-900/20 transition-all text-sm">
                         Exportar Todo
@@ -173,18 +201,47 @@ export default function DashboardPage() {
                         <div className="space-y-4">
                             {recentOrders.map((order) => (
                                 <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100 group">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-1.5 h-10 rounded-full ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-400' : 'bg-orange-400'}`}></div>
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <div className={`w-1.5 h-10 rounded-full ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-400' : (order.status === 'Pending Validation' ? 'bg-blue-400' : 'bg-orange-400')}`}></div>
                                         <div>
                                             <p className="font-bold text-gray-900 leading-tight">{order.customer}</p>
                                             <p className="text-[10px] font-bold text-[#4A5D23]">{order.phone || 'Sin teléfono'}</p>
                                             <p className="text-[9px] font-bold text-gray-400 mt-0.5 uppercase tracking-tighter">#{order.id} • {order.meal}</p>
                                         </div>
                                     </div>
+
+                                    {/* Support / Verification Column */}
+                                    <div className="flex-[1.2] flex items-center gap-2">
+                                        {order.payIdProof && (
+                                            <button
+                                                onClick={() => setSelectedProof(order.payIdProof as string)}
+                                                className="bg-blue-50 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-blue-100 transition-colors shadow-sm border border-blue-100 shrink-0"
+                                                title="Ver Comprobante"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 00-5.656-5.656l-6.415 6.414a6 6 0 108.486 8.486L20.5 13" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                        {order.status === 'Pending Validation' && (
+                                            <button
+                                                onClick={() => {
+                                                    const updatedOrders = recentOrders.map(o => o.id === order.id ? { ...o, status: 'Confirmed' } : o);
+                                                    localStorage.setItem('tropicalia_orders', JSON.stringify(updatedOrders));
+                                                    window.location.reload();
+                                                }}
+                                                className="bg-[#4A5D23] text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tight hover:bg-[#3a491c] transition-all shadow-md shadow-[#4A5D23]/20"
+                                            >
+                                                Validar Pago
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="flex flex-col items-end gap-1">
                                         <p className="font-black text-gray-900">${order.total}</p>
-                                        <p className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
-                                            {order.status}
+                                        <p className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full 
+                                            ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-100 text-green-600' :
+                                                order.status === 'Pending Validation' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                                            {order.status === 'Pending Validation' ? 'Por Validar' : (order.status === 'Confirmed' ? 'Confirmado' : order.status)}
                                         </p>
                                         {order.payIdProof && (
                                             <button

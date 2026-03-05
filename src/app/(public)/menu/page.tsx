@@ -96,7 +96,7 @@ export default function MenuPage() {
         }
 
         const orderDetails: Subscription = {
-            status: paymentMethod === 'payid' ? 'pending' : 'active',
+            status: 'Pending Validation',
             planName: `${selectedMeals.length} Días (${isFullWeek ? 'Semana Completa' : 'Flexible'})`,
             meals: selectedMeals,
             extras: extras.filter(e => e.quantity > 0),
@@ -152,7 +152,7 @@ export default function MenuPage() {
                                     onClick={() => setSelectedMeals([])}
                                     className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${selectedMeals.length === 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
-                                    Ninguno
+                                    Días Sueltos
                                 </button>
                                 <button
                                     onClick={() => {
@@ -293,27 +293,25 @@ export default function MenuPage() {
                                             </div>
                                             <button
                                                 className={`px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg text-sm whitespace-nowrap
-                                                    ${(paymentMethod === 'payid' && !payIdProofBase64)
+                                                    ${!payIdProofBase64
                                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
                                                         : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-[#4A5D23]/20'
                                                     }`}
-                                                disabled={paymentMethod === 'payid' && !payIdProofBase64}
+                                                disabled={!payIdProofBase64}
                                                 onClick={handleSubscribe}
                                             >
                                                 Finalizar Pedido →
                                             </button>
                                         </div>
 
-                                        {/* Payment Method Toggle (Simplified) */}
+                                        {/* Payment Method strictly PayID (Label ONLY) */}
                                         <div className="flex gap-2 text-xs">
-                                            <label className="flex items-center gap-1 cursor-pointer">
-                                                <input type="radio" checked={paymentMethod === 'auto'} onChange={() => setPaymentMethod('auto')} className="accent-[#4A5D23]" />
-                                                <span>Tarjeta</span>
-                                            </label>
-                                            <label className="flex items-center gap-1 cursor-pointer">
-                                                <input type="radio" checked={paymentMethod === 'payid'} onChange={() => setPaymentMethod('payid')} className="accent-[#4A5D23]" />
-                                                <span>PayID</span>
-                                            </label>
+                                            <div className="flex items-center gap-1 text-[#4A5D23] font-bold">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                </svg>
+                                                <span>Pago Seguro vía PayID</span>
+                                            </div>
                                         </div>
                                         {paymentMethod === 'payid' && (
                                             <div className="mt-2 p-4 bg-[#FFF8F0] rounded-xl border border-orange-200 text-[11px] space-y-3 shadow-sm">

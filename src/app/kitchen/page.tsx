@@ -92,7 +92,12 @@ export default function KitchenDashboard() {
                     };
                 });
 
-                setOrders(enriched);
+                // Filter: Kitchen only sees orders that ARE confirmed/delivered, NOT those pending validation
+                const filtered = enriched.filter((o: any) =>
+                    o.status !== 'Pending Validation' && o.status !== 'pending'
+                );
+
+                setOrders(filtered);
             } catch (e) {
                 console.error("Error loading kitchen orders:", e);
             }

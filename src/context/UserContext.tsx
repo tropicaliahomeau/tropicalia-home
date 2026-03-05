@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 export type UserRole = "ADMIN" | "KITCHEN" | "STAFF" | "CUSTOMER";
 
 export interface Subscription {
-    status: 'active' | 'inactive' | 'pending';
+    status: 'active' | 'inactive' | 'pending' | 'Pending Validation' | 'Confirmed';
     planName: string;
     meals: number[]; // IDs of selected meals
     extras?: { id: string; name: string; price: number; quantity: number }[];
