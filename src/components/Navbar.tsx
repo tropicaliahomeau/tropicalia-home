@@ -10,7 +10,9 @@ import { useUser } from '@/context/UserContext';
 export default function Navbar() {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { user, logout } = useUser();
+    const { user, logout, cart } = useUser();
+
+    const cartCount = cart.meals.length + cart.extras.reduce((sum, e) => sum + e.quantity, 0);
 
     const navLinks = [
         { name: 'Home', href: '/' },
@@ -57,6 +59,24 @@ export default function Navbar() {
                                 </Link>
                             ))}
                         </div>
+
+                        {/* DESKTOP CART ICON */}
+                        <Link
+                            href="/checkout/review"
+                            className="relative p-2 text-[#4A5D23] hover:scale-110 transition-transform ml-4"
+                        >
+                            <div className="bg-green-50 p-2 rounded-xl border border-green-100 shadow-sm relative">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                </svg>
+                                {cartCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce-subtle">
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </div>
+                        </Link>
                     </div>
 
                     {/* Auth Buttons */}
@@ -99,8 +119,25 @@ export default function Navbar() {
                         )}
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className={styles.mobileMenuBtnContainer}>
+                    <div className="flex items-center gap-3 md:hidden">
+                        {/* MOBILE CART ICON */}
+                        <Link
+                            href="/checkout/review"
+                            className="relative p-2 text-[#4A5D23]"
+                        >
+                            <div className="bg-green-50 p-2 rounded-xl border border-green-100 shadow-sm relative">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                </svg>
+                                {cartCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white animate-bounce-subtle">
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </div>
+                        </Link>
+
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                             className={styles.mobileMenuBtn}

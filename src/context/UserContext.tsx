@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
@@ -55,6 +54,16 @@ interface UserContextType {
     allOrders: Order[];
     updateIsNotified: (id: string) => void;
     updateOrderStatus: (id: string, status: string) => void;
+    cart: {
+        meals: number[];
+        extras: { id: string; name: string; price: number; quantity: number }[];
+    };
+    addToCart: (type: 'meal' | 'extra', item: any) => void;
+    removeFromCart: (type: 'meal' | 'extra', id: string | number) => void;
+    updateCartExtraQuantity: (id: string, change: number) => void;
+    clearCart: () => void;
+    isCartOpen: boolean;
+    setIsCartOpen: (open: boolean) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -81,7 +90,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (storedUser) {
             try {
                 const parsedUser: User = JSON.parse(storedUser);
-                // Refresh referral count from storage
                 parsedUser.referralCount = getReferralCount(parsedUser.phone);
                 setUser(parsedUser);
             } catch (e) {
@@ -89,30 +97,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 localStorage.removeItem("tropicalia_user");
             }
         }
+
+        // Load existing orders
+        const storedOrders = localStorage.getItem("tropicalia_orders");
+        if (storedOrders) {
+            try {
+                const parsedOrders: Order[] = JSON.parse(storedOrders);
+                setAllOrders(parsedOrders);
+            } catch (e) {
+                console.error("Failed to parse orders data", e);
+            }
+        }
+
         setIsLoading(false);
     }, []);
 
     const login = (email: string, role: UserRole) => {
         setIsLoading(true);
-        // Simulate API call
         setTimeout(() => {
-            // In a real app we would look up the user. 
-            // Here we just mock it, but if we can find a phone stored previously for this email in a "mock db" we would use it.
-            // For now, prompt the user if needed or just use a dummy phone if not provided, 
-            // but the login signature doesn't take phone.
-            // We'll just set referralCount to 0 for this mock login unless we had it.
-
             const mockUser: User = {
                 id: Math.random().toString(36).substr(2, 9),
                 name: email.split("@")[0],
                 email,
                 role,
                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-                // Default no subscription
                 referralCount: 0
             };
 
-            // If we have the user in local storage already, try to preserve their phone to show referrals
             const existing = localStorage.getItem("tropicalia_user");
             if (existing) {
                 const parsed = JSON.parse(existing);
@@ -126,28 +137,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
             setIsLoading(false);
 
-            // Redirect based on role
             if (role === 'ADMIN') router.push('/admin/dashboard');
-            else router.push('/dashboard'); // Client dashboard
-
+            else router.push('/dashboard');
         }, 800);
     };
 
     const register = (name: string, email: string, phone: string, allergies: string, referrerPhone?: string) => {
         setIsLoading(true);
-        // Simulate API call
         setTimeout(() => {
-            // Handle Referral Logic
             if (referrerPhone) {
                 try {
                     const referrals = JSON.parse(localStorage.getItem("tropicalia_referrals") || "{}");
                     referrals[referrerPhone] = (referrals[referrerPhone] || 0) + 1;
                     localStorage.setItem("tropicalia_referrals", JSON.stringify(referrals));
-
-                    // Check if they reached 5 referrals now (Critical Point #7)
-                    if (referrals[referrerPhone] >= 5) {
-                        console.log("REWARD UNLOCKED: 5 Referrals reached for", referrerPhone);
-                    }
                 } catch (e) {
                     console.error("Error saving referral", e);
                 }
@@ -158,20 +160,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: name,
                 email,
                 phone,
-                allergies, // Added allergies
-                role: "CUSTOMER", // Default role
+                allergies,
+                role: "CUSTOMER",
                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-                referralCount: 0 // New users start with 0
+                referralCount: 0
             };
 
             setUser(mockUser);
             localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
 
-            // Sync with Admin Dashboard (Production Transition - Point #2)
             try {
                 const allUsersJson = localStorage.getItem("tropicalia_all_users") || "[]";
                 const allUsers = JSON.parse(allUsersJson);
-                // Avoid duplicates by email
                 const existingIndex = allUsers.findIndex((u: any) => u.email === email);
                 if (existingIndex > -1) {
                     allUsers[existingIndex] = mockUser;
@@ -208,16 +208,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const updateSubscription = (subscription: Subscription) => {
         if (!user) return;
-
         let finalSubscription = { ...subscription };
 
-        // Apply Referral Reward (Critical Point #7)
         if (user.referralCount && user.referralCount >= 5) {
-            console.log("APPLYING FREE WEEK REWARD!");
             finalSubscription.total = 0;
             finalSubscription.planName = `🎁 SEMANA GRATIS! (${subscription.planName})`;
 
-            // Reset counter in storage
             const updatedUser = { ...user, referralCount: 0, subscription: finalSubscription };
             try {
                 const referrals = JSON.parse(localStorage.getItem("tropicalia_referrals") || "{}");
@@ -236,21 +232,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
         }
 
-        // Generate Unique Order ID (Point #4 Additional)
         const orderId = `TH-${Math.floor(1000 + Math.random() * 9000)}`;
-
-        // Calculate granular totals
-        const lunchTotal = subscription.planName.toLowerCase().includes('semana') ? subscription.total || 0 : (subscription.total || 0);
-        // Note: For now, if no explicit breakdown, we'll try to estimate or just store total.
-        // Better: using the actual extras list if available.
         const extrasTotal = subscription.extras?.reduce((sum, e) => sum + (e.price * e.quantity), 0) || 0;
         const mainLunchTotal = (subscription.total || 0) - extrasTotal;
 
-        // Mock creating a new order
         const newOrder: Order = {
             id: orderId,
             customer: user.name,
-            phone: user.phone || 'N/A', // Added phone for Admin Feed
+            phone: user.phone || 'N/A',
             meal: subscription.planName,
             status: "Pending",
             customerId: user.id,
@@ -258,10 +247,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
             total: subscription.total,
             lunchTotal: mainLunchTotal,
             extrasTotal: extrasTotal,
-            payIdProof: subscription.payIdProof // Ensure proof is passed
+            payIdProof: subscription.payIdProof
         };
 
-        // Update User History/Context
         try {
             const finalSubscriptionWithId = { ...finalSubscription, orderId };
             const updatedUserFinal = { ...user, subscription: finalSubscriptionWithId };
@@ -274,7 +262,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     localStorage.setItem("tropicalia_orders", JSON.stringify(updated));
                 } catch (e) {
                     console.error("Storage limit exceeded for orders:", e);
-                    // Fallback: still update state but warn
                 }
                 return updated;
             });
@@ -282,6 +269,70 @@ export function UserProvider({ children }: { children: ReactNode }) {
             console.error("Critical Storage Error:", e);
             alert("⚠️ Error de Almacenamiento: El comprobante es demasiado pesado o el historial está lleno. Por favor, intenta con una imagen más pequeña o limpia el caché del navegador.");
         }
+    };
+
+    // Cart State
+    const [cart, setCart] = useState<{
+        meals: number[];
+        extras: { id: string; name: string; price: number; quantity: number }[];
+    }>({
+        meals: [],
+        extras: []
+    });
+    const [isCartOpen, setIsCartOpen] = useState(false);
+
+    const addToCart = (type: 'meal' | 'extra', item: any) => {
+        if (type === 'meal') {
+            setCart(prev => ({
+                ...prev,
+                meals: prev.meals.includes(item.id) ? prev.meals : [...prev.meals, item.id]
+            }));
+        } else {
+            setCart(prev => {
+                const existing = prev.extras.find(e => e.id === item.id);
+                if (existing) {
+                    return {
+                        ...prev,
+                        extras: prev.extras.map(e => e.id === item.id ? { ...e, quantity: e.quantity + 1 } : e)
+                    };
+                }
+                return {
+                    ...prev,
+                    extras: [...prev.extras, { ...item, quantity: 1 }]
+                };
+            });
+        }
+    };
+
+    const removeFromCart = (type: 'meal' | 'extra', id: string | number) => {
+        if (type === 'meal') {
+            setCart(prev => ({
+                ...prev,
+                meals: prev.meals.filter(mId => mId !== id)
+            }));
+        } else {
+            setCart(prev => ({
+                ...prev,
+                extras: prev.extras.filter(e => e.id !== id)
+            }));
+        }
+    };
+
+    const updateCartExtraQuantity = (id: string, change: number) => {
+        setCart(prev => ({
+            ...prev,
+            extras: prev.extras.map(e => {
+                if (e.id === id) {
+                    const newQty = Math.max(0, e.quantity + change);
+                    return { ...e, quantity: newQty };
+                }
+                return e;
+            }).filter(e => e.quantity > 0)
+        }));
+    };
+
+    const clearCart = () => {
+        setCart({ meals: [], extras: [] });
     };
 
     return (
@@ -294,7 +345,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
             updateSubscription,
             allOrders,
             updateIsNotified,
-            updateOrderStatus
+            updateOrderStatus,
+            cart,
+            addToCart,
+            removeFromCart,
+            updateCartExtraQuantity,
+            clearCart,
+            isCartOpen,
+            setIsCartOpen
         }}>
             {children}
         </UserContext.Provider>

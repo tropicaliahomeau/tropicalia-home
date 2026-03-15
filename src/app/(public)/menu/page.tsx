@@ -1,55 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import { useUser, Subscription } from '@/context/UserContext';
+import { useUser } from '@/context/UserContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './menu.module.css';
 import { MENUS } from '@/data/menus';
 
 export default function MenuPage() {
-    const { user, updateSubscription } = useUser();
+    const {
+        user,
+        cart,
+        addToCart,
+        removeFromCart,
+        updateCartExtraQuantity
+    } = useUser();
+
     const router = useRouter();
     const [selectedWeekId, setSelectedWeekId] = useState<string>(MENUS[0].id);
-    const [selectedMeals, setSelectedMeals] = useState<number[]>([]);
-    const [activeView, setActiveView] = useState<'food' | 'drinks'>('food');
-
-    // Extras State
-    const [extras, setExtras] = useState<{ id: string, name: string, price: number, quantity: number }[]>([
-        { id: '1', name: 'Pony Malta', price: 3.50, quantity: 0 },
-        { id: '2', name: 'Colombiana', price: 3.00, quantity: 0 },
-        { id: '3', name: 'Manzana Postobón', price: 3.00, quantity: 0 },
-    ]);
-
-    // Payment State
-    const [paymentMethod, setPaymentMethod] = useState<'auto' | 'payid'>('payid');
-    const [payIdProofBase64, setPayIdProofBase64] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPayIdProofBase64(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        } else {
-            setPayIdProofBase64(null);
-        }
-    };
 
     const currentMenu = MENUS.find(m => m.id === selectedWeekId) || MENUS[0];
 
     // Logic to lock future weeks (Only Week 1 is 'active' for purchase in this demo)
     const isOrderingEnabled = currentMenu.id === 'week-1';
 
-    // Pricing Calculation
+    // pricing calculation integrated with UserContext cart
     const calculateTotal = () => {
-        const isFullWeek = selectedMeals.length >= 5;
-        const daysCost = isFullWeek ? 85.00 : (selectedMeals.length * 18.00);
-
-        const extrasCost = extras.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        const isFullWeek = cart.meals.length >= 5;
+        const daysCost = isFullWeek ? 85.00 : (cart.meals.length * 18.00);
+        const extrasCost = cart.extras.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
         return {
             total: daysCost + extrasCost,
@@ -59,84 +38,48 @@ export default function MenuPage() {
         };
     };
 
-    const { total, daysCost, isFullWeek } = calculateTotal();
+    const { total, isFullWeek } = calculateTotal();
 
-    const toggleMeal = (id: number) => {
+    const toggleMeal = (meal: any) => {
         if (!isOrderingEnabled) return;
-        if (selectedMeals.includes(id)) {
-            setSelectedMeals(selectedMeals.filter(mealId => mealId !== id));
+        if (cart.meals.includes(meal.id)) {
+            removeFromCart('meal', meal.id);
         } else {
-            setSelectedMeals([...selectedMeals, id]);
+            addToCart('meal', meal);
         }
     };
 
     const selectFullWeek = () => {
         if (!isOrderingEnabled) return;
-        const allMealIds = currentMenu.meals.map(m => m.id);
-        setSelectedMeals(allMealIds);
-    };
-
-    const updateExtraQuantity = (id: string, change: number) => {
-        setExtras(extras.map(e => {
-            if (e.id === id) {
-                const newQty = Math.max(0, e.quantity + change);
-                return { ...e, quantity: newQty };
+        currentMenu.meals.forEach(m => {
+            if (!cart.meals.includes(m.id)) {
+                addToCart('meal', m);
             }
-            return e;
-        }));
+        });
     };
 
-    const handleSubscribe = async () => {
+    // Available extras (matches the ones in UserContext mock but defined here for UI)
+    const availableExtras = [
+        { id: '1', name: 'Pony Malta', price: 3.50 },
+        { id: '2', name: 'Colombiana', price: 3.00 },
+        { id: '3', name: 'Manzana Postobón', price: 3.00 },
+    ];
+
+    const handleNext = () => {
         if (!user) {
-            alert("Please log in to subscribe!");
             router.push('/login');
             return;
         }
-
-        if (paymentMethod === 'payid' && !payIdProofBase64) {
-            return;
-        }
-
-        setIsProcessing(true);
-
-        try {
-            const orderDetails: Subscription = {
-                status: 'Pending Validation',
-                planName: `${selectedMeals.length} Días (${isFullWeek ? 'Semana Completa' : 'Flexible'})`,
-                meals: selectedMeals,
-                extras: extras.filter(e => e.quantity > 0),
-                total,
-                paymentMethod: paymentMethod as 'auto' | 'payid',
-                payIdProof: payIdProofBase64
-            };
-
-            console.log("Processing Order:", orderDetails);
-
-            // Give a tiny delay for the UI to show 'Processing'
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            updateSubscription(orderDetails);
-
-            const confirmMsg = paymentMethod === 'payid'
-                ? `✅ Pago enviado. Tu pedido está PENDIENTE de aprobación por parte de Ish (Admin). Total: $${total}`
-                : `✅ ¡Suscripción confirmada! Total: $${total}`;
-
-            alert(confirmMsg);
-            router.push('/dashboard');
-        } catch (error) {
-            console.error("Order process error:", error);
-            alert("❌ Hubo un error al procesar tu pedido. Por favor intenta de nuevo.");
-        } finally {
-            setIsProcessing(false);
-        }
+        router.push('/checkout/review');
     };
 
     return (
         <div className="container mx-auto px-4 py-8">
             <div className={styles.container}>
                 <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-2">Menú Semanal - {currentMenu.name}</h1>
-                    <p className="text-gray-600 text-lg">Selecciona tus almuerzos. ¡Pide 5 días por solo $85!</p>
+                    <p className="text-[#4A5D23] font-bold uppercase tracking-widest text-sm mb-2">Paso 1 de 3: Selección</p>
+                    <h1 className="text-4xl font-black text-gray-800 mb-2">Menú Semanal - {currentMenu.name}</h1>
+                    <p className="text-gray-600 text-lg italic">Selecciona tus almuerzos. ¡Pide 5 días por solo $85!</p>
                 </div>
 
                 {/* Week Selector */}
@@ -146,7 +89,6 @@ export default function MenuPage() {
                             key={week.id}
                             onClick={() => {
                                 setSelectedWeekId(week.id);
-                                setSelectedMeals([]);
                             }}
                             className={`px-6 py-2 rounded-full transition-all whitespace-nowrap font-medium ${selectedWeekId === week.id
                                 ? 'bg-[#4A5D23] text-white shadow-lg transform scale-105'
@@ -158,279 +100,148 @@ export default function MenuPage() {
                     ))}
                 </div>
 
-                {/* Selection Controls */}
                 <div className="mb-8 flex flex-col items-center gap-3">
-                    {isOrderingEnabled ? (
-                        <>
-                            <div className="flex bg-gray-100 p-1 rounded-full border border-gray-200 shadow-inner">
-                                <button
-                                    onClick={() => {
-                                        setActiveView('food');
-                                        setSelectedMeals([]);
-                                    }}
-                                    disabled={!!payIdProofBase64}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeView === 'food' && selectedMeals.length === 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    Por Días
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setActiveView('food');
-                                        const allMealIds = currentMenu.meals.map(m => m.id);
-                                        setSelectedMeals(allMealIds);
-                                    }}
-                                    disabled={!!payIdProofBase64}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeView === 'food' && selectedMeals.length > 0 ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    Semana Completa
-                                </button>
-                                <button
-                                    onClick={() => setActiveView('drinks')}
-                                    disabled={!!payIdProofBase64}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeView === 'drinks' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'} ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    Bebidas
-                                </button>
-                            </div>
-                            <p className="text-sm text-gray-500">
-                                O selecciona los días individualmente haciendo clic en cada tarjeta.
-                            </p>
-                        </>
-                    ) : (
+                    {!isOrderingEnabled && (
                         <div className="bg-gray-100 text-gray-500 px-6 py-2 rounded-full font-medium border border-gray-200">
                             🔒 Esta semana solo está disponible para visualización
                         </div>
                     )}
                 </div>
 
-                {/* Selection Grids */}
-                {activeView === 'food' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-24">
-                        {currentMenu.meals.map((meal) => (
-                            <div
-                                key={meal.id}
-                                onClick={() => toggleMeal(meal.id)}
+                {/* Main Content Layout - Grid with Sidebar */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+                    <div className="lg:col-span-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+                            {currentMenu.meals.map((meal) => (
+                                <div
+                                    key={meal.id}
+                                    onClick={() => toggleMeal(meal)}
+                                    className={`
+                                            relative bg-white rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer group
+                                            ${cart.meals.includes(meal.id) ? 'border-[#4A5D23] ring-2 ring-[#4A5D23]/10 shadow-xl transform scale-[1.02]' : 'border-gray-100 hover:border-gray-200 hover:shadow-lg'}
+                                            ${!isOrderingEnabled ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
+                                        `}
+                                >
+                                    {/* Day Label */}
+                                    <div className="bg-[#4A5D23] text-white text-center py-1.5 text-xs font-black tracking-widest uppercase">
+                                        {meal.day}
+                                    </div>
+
+                                    {/* Image */}
+                                    <div className="relative h-48 w-full bg-gray-100">
+                                        <Image
+                                            src={meal.image}
+                                            alt={meal.title}
+                                            fill
+                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                            sizes="(max-width: 768px) 100vw, 33vw"
+                                        />
+                                        {cart.meals.includes(meal.id) && (
+                                            <div className="absolute inset-0 bg-[#4A5D23]/30 flex items-center justify-center backdrop-blur-[2px] animate-fade-in">
+                                                <div className="bg-white text-[#4A5D23] rounded-full p-3 shadow-2xl transform scale-110">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-5 flex flex-col h-full">
+                                        <h3 className="font-black text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#4A5D23] transition-colors">{meal.title}</h3>
+                                        <p className="text-sm text-gray-500 mb-4 line-clamp-2">{meal.description}</p>
+
+                                        {isOrderingEnabled ? (
+                                            <button
+                                                className={`w-full py-3 rounded-xl text-sm font-black transition-all mt-auto border-2
+                                                        ${cart.meals.includes(meal.id)
+                                                        ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
+                                                        : 'bg-white border-gray-100 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleMeal(meal);
+                                                }}
+                                            >
+                                                {cart.meals.includes(meal.id) ? 'QUITAR DÍA' : 'SELECCIONAR'}
+                                            </button>
+                                        ) : (
+                                            <div className="mt-auto pt-2 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Agotado</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Right Side: Sidebar (TU CANASTA) */}
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-24 bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-2xl shadow-gray-200/50">
+                            <h2 className="text-[#4A5D23] font-black text-2xl mb-8 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
+                                TU CANASTA
+                            </h2>
+
+                            <div className="space-y-6 mb-8">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-gray-400 font-bold text-xs uppercase tracking-widest leading-none">Total estimativo</span>
+                                    <span className="text-4xl font-black text-gray-900 leading-none">${total.toFixed(2)}</span>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded-2xl space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">{cart.meals.length} Almuerzos</span>
+                                        <span className="font-black text-gray-700">
+                                            {isFullWeek ? '$85.00' : `$${(cart.meals.length * 18).toFixed(2)}`}
+                                        </span>
+                                    </div>
+
+                                </div>
+
+                                {isFullWeek && (
+                                    <div className="bg-green-100 text-[#4A5D23] text-[10px] font-black p-2 rounded-lg text-center uppercase tracking-widest animate-pulse">
+                                        ✨ Ahorro aplicado: Semana Completa
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={handleNext}
+                                disabled={cart.meals.length === 0 && cart.extras.length === 0}
                                 className={`
-                                    relative bg-white rounded-xl overflow-hidden border transition-all duration-300 cursor-pointer group
-                                    ${selectedMeals.includes(meal.id) ? 'border-[#4A5D23] ring-1 ring-[#4A5D23] shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'}
-                                    ${!isOrderingEnabled || !!payIdProofBase64 ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
+                                    w-full py-5 rounded-2xl font-black text-lg transition-all shadow-xl flex items-center justify-center gap-3
+                                    ${(cart.meals.length === 0 && cart.extras.length === 0)
+                                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
+                                        : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] hover:scale-[1.02] shadow-[#4A5D23]/30'}
                                 `}
                             >
-                                {/* Header Tag */}
-                                <div className="bg-[#4A5D23] text-white text-center py-1 text-sm font-bold tracking-wide">
-                                    {meal.day}
-                                </div>
+                                Siguiente →
+                            </button>
 
-                                {/* Image */}
-                                <div className="relative h-40 w-full bg-gray-100">
-                                    <Image
-                                        src={meal.image}
-                                        alt={meal.title}
-                                        fill
-                                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 20vw"
-                                    />
-                                    {selectedMeals.includes(meal.id) && (
-                                        <div className="absolute inset-0 bg-[#4A5D23]/40 flex items-center justify-center backdrop-blur-[2px] animate-fade-in">
-                                            <div className="bg-white text-[#4A5D23] rounded-full p-2 shadow-xl transform scale-110">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-3 flex flex-col h-full">
-                                    <h3 className="font-bold text-gray-800 text-sm mb-1 leading-tight min-h-[2.5em] group-hover:text-[#4A5D23] transition-colors">{meal.title}</h3>
-                                    <p className="text-xs text-gray-500 line-clamp-2 mb-3 h-8">{meal.description}</p>
-
-                                    {isOrderingEnabled ? (
-                                        <button
-                                            className={`w-full py-1.5 rounded-lg text-xs font-bold transition-all mt-auto border
-                                                ${selectedMeals.includes(meal.id)
-                                                    ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                                                    : 'bg-white border-gray-300 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleMeal(meal.id);
-                                            }}
-                                            disabled={!!payIdProofBase64} // Disable if proof exists
-                                        >
-                                            {selectedMeals.includes(meal.id) ? 'Quitar' : 'Seleccionar'}
-                                        </button>
-                                    ) : (
-                                        <div className="mt-auto pt-2 text-center text-[10px] font-bold text-gray-400 uppercase">Agotado</div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
-                        {extras.map(extra => (
-                            <div key={extra.id} className="flex flex-col p-8 bg-white rounded-[2.5rem] border border-gray-100 hover:border-blue-100 transition-all shadow-sm group">
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🥤</div>
-                                    <span className="font-black text-blue-600 text-xl">${extra.price.toFixed(2)}</span>
-                                </div>
-                                <h3 className="font-black text-gray-800 text-lg mb-4">{extra.name}</h3>
-                                <div className="flex items-center justify-between mt-auto bg-gray-50 p-2 rounded-2xl">
-                                    <button
-                                        onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, -1)}
-                                        disabled={!!payIdProofBase64}
-                                        className={`w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-red-500 transition-all active:scale-95 ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
-                                        </svg>
-                                    </button>
-                                    <span className="font-black text-2xl text-gray-900 w-8 text-center">{extra.quantity}</span>
-                                    <button
-                                        onClick={() => !payIdProofBase64 && updateExtraQuantity(extra.id, 1)}
-                                        disabled={!!payIdProofBase64}
-                                        className={`w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm text-gray-400 hover:text-[#4A5D23] transition-all active:scale-95 ${!!payIdProofBase64 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Footer Cart (Sticky) */}
-                {selectedMeals.length > 0 && isOrderingEnabled && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] p-4 z-50 animate-slide-up">
-                        <div className="container mx-auto max-w-4xl">
-
-                            {/* Extras Section (Upselling - Point 6) */}
-                            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                                <div className="flex-1 w-full">
-                                    <div className="bg-[#4A5D23]/5 p-3 rounded-xl border border-[#4A5D23]/10">
-                                        <h4 className="font-bold text-sm text-[#4A5D23] mb-3 flex items-center gap-2">
-                                            🥤 ¡Acompaña tu almuerzo con el sabor de casa!
-                                        </h4>
-                                        <div className="flex gap-3 overflow-x-auto pb-1">
-                                            {extras.map(drink => (
-                                                <div key={drink.id} className="flex items-center bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm shrink-0">
-                                                    <div className="mr-4">
-                                                        <p className="text-xs font-bold text-gray-800">{drink.name}</p>
-                                                        <p className="text-[10px] text-gray-500">${drink.price.toFixed(2)}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => updateExtraQuantity(drink.id, -1)}
-                                                            disabled={!!payIdProofBase64} // Disable if proof exists
-                                                            className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold hover:bg-gray-200 transition-colors"
-                                                        >
-                                                            -
-                                                        </button>
-                                                        <span className="font-bold w-4 text-center text-sm">{drink.quantity}</span>
-                                                        <button
-                                                            onClick={() => updateExtraQuantity(drink.id, 1)}
-                                                            disabled={!!payIdProofBase64} // Disable if proof exists
-                                                            className="w-7 h-7 rounded-full bg-[#4A5D23] text-white flex items-center justify-center text-sm font-bold hover:bg-[#3a491c] shadow-lg shadow-[#4A5D23]/20 transition-all active:scale-95"
-                                                        >
-                                                            +
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Summary & Actions */}
-                                <div className="flex-1 w-full md:w-auto mt-4 md:mt-0">
-                                    <div className="bg-orange-50 p-3 rounded-xl border border-orange-100 flex flex-col gap-3">
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <p className="text-xs text-orange-800 font-bold uppercase tracking-wider">Tu Canasta</p>
-                                                <p className="text-lg font-bold text-gray-900 leading-none mt-1">
-                                                    Total: ${total.toFixed(2)}
-                                                </p>
-                                                <p className="text-[10px] text-gray-500 mt-0.5">
-                                                    {selectedMeals.length} almuerzos + {extras.reduce((a, b) => a + b.quantity, 0)} bebidas
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={handleSubscribe}
-                                                disabled={!payIdProofBase64 || isProcessing}
-                                                className={`px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg text-sm whitespace-nowrap
-                                                    ${(!payIdProofBase64 || isProcessing)
-                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
-                                                        : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-[#4A5D23]/20'
-                                                    }`}
-                                            >
-                                                {isProcessing ? (
-                                                    <>
-                                                        <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin inline-block mr-2"></div>
-                                                        Procesando...
-                                                    </>
-                                                ) : (
-                                                    <>Finalizar Pedido →</>
-                                                )}
-                                            </button>
-                                        </div>
-
-                                        {/* Payment Method strictly PayID (Label ONLY) */}
-                                        <div className="flex gap-2 text-xs">
-                                            <div className="flex items-center gap-1 text-[#4A5D23] font-bold">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                                </svg>
-                                                <span>Pago Seguro vía PayID</span>
-                                            </div>
-                                        </div>
-                                        {/* Instructions & Upload Area (Always visible for PayID) */}
-                                        <div className="mt-2 p-4 bg-[#FFF8F0] rounded-xl border border-orange-200 text-[11px] space-y-3 shadow-sm">
-                                            <div className="bg-orange-100 p-2 rounded-lg font-black text-orange-800 uppercase tracking-tighter text-center">
-                                                Pasos para pagar con PayID
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <div className="flex items-start gap-2">
-                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">1</span>
-                                                    <p>Escoge tipo de pago por <span className="font-bold text-gray-800">"Email"</span>.</p>
-                                                </div>
-                                                <div className="flex items-start gap-2">
-                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">2</span>
-                                                    <p>Transfiere el total a: <span className="font-bold text-gray-800">tropicaliahome.au@gmail.com</span></p>
-                                                </div>
-                                                <div className="flex items-start gap-2">
-                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">3</span>
-                                                    <p>Usa tu <span className="font-bold text-gray-800">número de teléfono</span> como referencia del pago.</p>
-                                                </div>
-                                                <div className="flex items-start gap-2">
-                                                    <span className="bg-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-orange-500 shadow-sm shrink-0">4</span>
-                                                    <p>Sube una <span className="font-bold text-gray-800">captura de pantalla</span> del comprobante aquí abajo.</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="pt-2 border-t border-orange-100">
-                                                <p className="font-bold text-gray-700 mb-2 flex items-center gap-1">
-                                                    📸 Adjuntar Comprobante:
-                                                </p>
-                                                <div className="relative group">
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
-                                                        onChange={handleFileChange}
-                                                        disabled={!!payIdProofBase64} // Disable if proof exists
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <p className="text-[10px] text-gray-400 mt-6 text-center font-bold leading-relaxed uppercase tracking-tighter">
+                                Al dar clic en siguiente pasarás a revisar los detalles de tu pedido.
+                            </p>
                         </div>
+                    </div>
+                </div>
 
+                {/* Persistent Bottom Bar for Mobile Only */}
+                {cart.meals.length > 0 && (
+                    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] p-4 z-50 animate-slide-up">
+                        <div className="container mx-auto flex items-center justify-between gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total compra</span>
+                                <span className="text-2xl font-black text-[#4A5D23]">${total.toFixed(2)}</span>
+                            </div>
+                            <button
+                                onClick={handleNext}
+                                className="bg-[#4A5D23] text-white px-8 py-4 rounded-2xl font-black text-lg shadow-xl shadow-[#4A5D23]/20 transition-all active:scale-95"
+                            >
+                                Siguiente →
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
-import { UserProvider } from "@/context/UserContext"; // Import UserProvider
+import { UserProvider } from "@/context/UserContext";
 import "./globals.css";
 
 const inter = Inter({
