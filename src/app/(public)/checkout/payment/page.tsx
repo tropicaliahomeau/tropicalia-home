@@ -144,7 +144,42 @@ export default function PaymentPage() {
 
                     </div>
 
-                        {/* 2. Upload Payment Proof */}
+                        {/* 2. Payment Instructions */}
+                        <div className="bg-orange-50/50 rounded-[2rem] p-6 border border-orange-100">
+                            <button
+                                onClick={() => setIsInstructionsOpen(!isInstructionsOpen)}
+                                className="w-full flex items-center justify-between text-[#4A5D23] font-black uppercase tracking-widest text-sm"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <ShieldCheck className="w-5 h-5 text-orange-500" />
+                                    ¿Cómo realizar el pago?
+                                </div>
+                                {isInstructionsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                            </button>
+
+                            {isInstructionsOpen && (
+                                <div className="mt-6 pt-6 border-t border-orange-100/50 animate-fade-in space-y-4">
+                                    <div className="flex gap-4 items-start">
+                                        <div className="w-6 h-6 rounded-full bg-white text-orange-500 font-black flex items-center justify-center shrink-0 shadow-sm text-sm">1</div>
+                                        <p className="text-sm text-gray-700">Escoge tipo de pago por <strong className="text-gray-900">"Email"</strong>.</p>
+                                    </div>
+                                    <div className="flex gap-4 items-start">
+                                        <div className="w-6 h-6 rounded-full bg-white text-orange-500 font-black flex items-center justify-center shrink-0 shadow-sm text-sm">2</div>
+                                        <p className="text-sm text-gray-700">Transfiere el total a:<br /><strong className="text-[#4A5D23] font-black select-all text-base">tropicaliahome.au@gmail.com</strong></p>
+                                    </div>
+                                    <div className="flex gap-4 items-start">
+                                        <div className="w-6 h-6 rounded-full bg-white text-orange-500 font-black flex items-center justify-center shrink-0 shadow-sm text-sm">3</div>
+                                        <p className="text-sm text-gray-700">Usa tu <strong className="text-gray-900">número de teléfono</strong> como referencia del pago.</p>
+                                    </div>
+                                    <div className="flex gap-4 items-start">
+                                        <div className="w-6 h-6 rounded-full bg-white text-orange-500 font-black flex items-center justify-center shrink-0 shadow-sm text-sm">4</div>
+                                        <p className="text-sm text-gray-700">Sube una <strong className="text-gray-900">captura de pantalla</strong> del comprobante aquí abajo.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 3. Upload Payment Proof */}
                         <div className="space-y-4">
                             <div className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100 text-center">
                                 <p className="text-sm font-black text-[#4A5D23] uppercase tracking-widest mb-6">📸 ADJUNTAR COMPROBANTE</p>
