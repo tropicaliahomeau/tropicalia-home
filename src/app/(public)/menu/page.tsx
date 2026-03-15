@@ -64,6 +64,8 @@ export default function MenuPage() {
         { id: '1', name: 'Pony Malta', price: 3.50 },
         { id: '2', name: 'Colombiana', price: 3.00 },
         { id: '3', name: 'Manzana Postobón', price: 3.00 },
+        { id: '4', name: 'Bom bom bun', price: 1.00 },
+        { id: '5', name: 'Chocorramo', price: 1.00 },
     ];
 
     const handleNext = () => {
@@ -140,13 +142,13 @@ export default function MenuPage() {
                                         : 'text-gray-500 hover:text-gray-800'
                                         }`}
                                 >
-                                    Bebidas
+                                    Bebidas (Otros)
                                 </button>
                             </div>
                             <p className="text-gray-400 text-sm mt-2 text-center">
                                 {viewMode === 'daily' && 'Selecciona los días individualmente haciendo clic en cada tarjeta.'}
                                 {viewMode === 'weekly' && '¡Excelente elección! Has seleccionado la semana completa con descuento.'}
-                                {viewMode === 'drinks' && 'Acompaña tu almuerzo con el auténtico sabor colombiano.'}
+                                {viewMode === 'drinks' && 'Acompaña tu almuerzo con algo extra y delicioso.'}
                             </p>
                         </>
                     )}
