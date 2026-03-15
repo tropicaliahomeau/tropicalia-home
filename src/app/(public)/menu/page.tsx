@@ -18,6 +18,7 @@ export default function MenuPage() {
 
     const router = useRouter();
     const [selectedWeekId, setSelectedWeekId] = useState<string>(MENUS[0].id);
+    const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'drinks'>('daily');
 
     const currentMenu = MENUS.find(m => m.id === selectedWeekId) || MENUS[0];
 
@@ -102,9 +103,52 @@ export default function MenuPage() {
 
                 <div className="mb-8 flex flex-col items-center gap-3">
                     {!isOrderingEnabled && (
-                        <div className="bg-gray-100 text-gray-500 px-6 py-2 rounded-full font-medium border border-gray-200">
+                        <div className="bg-gray-100 text-gray-500 px-6 py-2 rounded-full font-medium border border-gray-200 mb-4">
                             🔒 Esta semana solo está disponible para visualización
                         </div>
+                    )}
+
+                    {/* Desktop View Mode Toggle (Por Días / Semana / Bebidas) */}
+                    {isOrderingEnabled && (
+                        <>
+                            <div className="bg-white rounded-full p-2 border border-gray-200 shadow-sm flex items-center justify-center space-x-2">
+                                <button
+                                    onClick={() => setViewMode('daily')}
+                                    className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'daily'
+                                        ? 'bg-white shadow-md text-[#4A5D23]'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                >
+                                    Por Días
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setViewMode('weekly');
+                                        selectFullWeek();
+                                    }}
+                                    className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'weekly'
+                                        ? 'bg-white shadow-md text-[#4A5D23]'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                >
+                                    Semana Completa
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('drinks')}
+                                    className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'drinks'
+                                        ? 'bg-white shadow-md text-[#4A5D23]'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                >
+                                    Bebidas
+                                </button>
+                            </div>
+                            <p className="text-gray-400 text-sm mt-2 text-center">
+                                {viewMode === 'daily' && 'Selecciona los días individualmente haciendo clic en cada tarjeta.'}
+                                {viewMode === 'weekly' && '¡Excelente elección! Has seleccionado la semana completa con descuento.'}
+                                {viewMode === 'drinks' && 'Acompaña tu almuerzo con el auténtico sabor colombiano.'}
+                            </p>
+                        </>
                     )}
                 </div>
 
@@ -113,65 +157,109 @@ export default function MenuPage() {
 
                     <div className="lg:col-span-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
-                            {currentMenu.meals.map((meal) => (
-                                <div
-                                    key={meal.id}
-                                    onClick={() => toggleMeal(meal)}
-                                    className={`
-                                            relative bg-white rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer group
-                                            ${cart.meals.includes(meal.id) ? 'border-[#4A5D23] ring-2 ring-[#4A5D23]/10 shadow-xl transform scale-[1.02]' : 'border-gray-100 hover:border-gray-200 hover:shadow-lg'}
-                                            ${!isOrderingEnabled ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
-                                        `}
-                                >
-                                    {/* Day Label */}
-                                    <div className="bg-[#4A5D23] text-white text-center py-1.5 text-xs font-black tracking-widest uppercase">
-                                        {meal.day}
-                                    </div>
+                            {viewMode !== 'drinks' ? (
+                                currentMenu.meals.map((meal) => (
+                                    <div
+                                        key={meal.id}
+                                        onClick={() => toggleMeal(meal)}
+                                        className={`
+                                                relative bg-white rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer group
+                                                ${cart.meals.includes(meal.id) ? 'border-[#4A5D23] ring-2 ring-[#4A5D23]/10 shadow-xl transform scale-[1.02]' : 'border-gray-100 hover:border-gray-200 hover:shadow-lg'}
+                                                ${!isOrderingEnabled ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
+                                            `}
+                                    >
+                                        {/* Day Label */}
+                                        <div className="bg-[#4A5D23] text-white text-center py-1.5 text-xs font-black tracking-widest uppercase">
+                                            {meal.day}
+                                        </div>
 
-                                    {/* Image */}
-                                    <div className="relative h-48 w-full bg-gray-100">
-                                        <Image
-                                            src={meal.image}
-                                            alt={meal.title}
-                                            fill
-                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                            sizes="(max-width: 768px) 100vw, 33vw"
-                                        />
-                                        {cart.meals.includes(meal.id) && (
-                                            <div className="absolute inset-0 bg-[#4A5D23]/30 flex items-center justify-center backdrop-blur-[2px] animate-fade-in">
-                                                <div className="bg-white text-[#4A5D23] rounded-full p-3 shadow-2xl transform scale-110">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
-                                                    </svg>
+                                        {/* Image */}
+                                        <div className="relative h-48 w-full bg-gray-100">
+                                            <Image
+                                                src={meal.image}
+                                                alt={meal.title}
+                                                fill
+                                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                                sizes="(max-width: 768px) 100vw, 33vw"
+                                            />
+                                            {cart.meals.includes(meal.id) && (
+                                                <div className="absolute inset-0 bg-[#4A5D23]/30 flex items-center justify-center backdrop-blur-[2px] animate-fade-in">
+                                                    <div className="bg-white text-[#4A5D23] rounded-full p-3 shadow-2xl transform scale-110">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
                                                 </div>
+                                            )}
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="p-5 flex flex-col h-full">
+                                            <h3 className="font-black text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#4A5D23] transition-colors">{meal.title}</h3>
+                                            <p className="text-sm text-gray-500 mb-4 line-clamp-2">{meal.description}</p>
+
+                                            {isOrderingEnabled ? (
+                                                <button
+                                                    className={`w-full py-3 rounded-xl text-sm font-black transition-all mt-auto border-2
+                                                            ${cart.meals.includes(meal.id)
+                                                            ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
+                                                            : 'bg-white border-gray-100 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleMeal(meal);
+                                                    }}
+                                                >
+                                                    {cart.meals.includes(meal.id) ? 'QUITAR DÍA' : 'SELECCIONAR'}
+                                                </button>
+                                            ) : (
+                                                <div className="mt-auto pt-2 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Agotado</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                /* DRINKS SECTION (Visible only when viewMode === 'drinks') */
+                                availableExtras.map((extra) => {
+                                    const cartItem = cart.extras.find((e) => e.id === extra.id);
+                                    const quantity = cartItem ? cartItem.quantity : 0;
+
+                                    return (
+                                        <div key={extra.id} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                            <div>
+                                                <h4 className="font-bold text-gray-800">{extra.name}</h4>
+                                                <p className="text-sm text-gray-500">${extra.price.toFixed(2)}</p>
                                             </div>
-                                        )}
-                                    </div>
 
-                                    {/* Content */}
-                                    <div className="p-5 flex flex-col h-full">
-                                        <h3 className="font-black text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#4A5D23] transition-colors">{meal.title}</h3>
-                                        <p className="text-sm text-gray-500 mb-4 line-clamp-2">{meal.description}</p>
-
-                                        {isOrderingEnabled ? (
-                                            <button
-                                                className={`w-full py-3 rounded-xl text-sm font-black transition-all mt-auto border-2
-                                                        ${cart.meals.includes(meal.id)
-                                                        ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
-                                                        : 'bg-white border-gray-100 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleMeal(meal);
-                                                }}
-                                            >
-                                                {cart.meals.includes(meal.id) ? 'QUITAR DÍA' : 'SELECCIONAR'}
-                                            </button>
-                                        ) : (
-                                            <div className="mt-auto pt-2 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Agotado</div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                            <div className="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-100">
+                                                <button
+                                                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${quantity > 0 ? 'bg-white text-gray-600 shadow-sm hover:text-red-500' : 'text-gray-300 cursor-not-allowed'}`}
+                                                    onClick={() => updateCartExtraQuantity(extra.id, -1)}
+                                                    disabled={quantity === 0}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
+                                                    </svg>
+                                                </button>
+                                                <span className="font-black w-4 text-center text-gray-800">{quantity}</span>
+                                                <button
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-[#4A5D23] text-white shadow-sm hover:bg-[#3a491c] transition-colors"
+                                                    onClick={() => {
+                                                        if (quantity === 0) {
+                                                            addToCart('extra', { ...extra, quantity: 1 });
+                                                        } else {
+                                                            updateCartExtraQuantity(extra.id, 1);
+                                                        }
+                                                    }}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 
