@@ -64,8 +64,8 @@ export default function MenuPage() {
         { id: '1', name: 'Pony Malta', price: 3.50 },
         { id: '2', name: 'Colombiana', price: 3.00 },
         { id: '3', name: 'Manzana Postobón', price: 3.00 },
-        { id: '4', name: 'Bom bom bun', price: 1.00 },
-        { id: '5', name: 'Chocorramo', price: 1.00 },
+        { id: '4', name: 'Bom bom bum', price: 1.00 },
+        { id: '5', name: 'Chocoramo', price: 1.00 },
     ];
 
     const handleNext = () => {
