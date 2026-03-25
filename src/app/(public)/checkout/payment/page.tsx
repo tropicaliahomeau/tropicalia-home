@@ -252,7 +252,7 @@ export default function PaymentPage() {
                                             if (token.status === 'OK') {
                                                 await handlePayment(token.token);
                                             } else {
-                                                console.error('Square Tokenization Error:', token.errors);
+                                                console.error('Square Tokenization Error:', (token as any).errors || token);
                                                 alert("Error validating card. Check details.");
                                             }
                                         }}
