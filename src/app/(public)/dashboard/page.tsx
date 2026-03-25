@@ -13,6 +13,8 @@ export default function ClientDashboard() {
     useEffect(() => {
         if (!isLoading && !user) {
             router.push('/login');
+        } else if (!isLoading && user && user.role !== 'ADMIN' && (!user.phone || !user.allergies)) {
+            router.push('/register');
         }
     }, [user, isLoading, router]);
 

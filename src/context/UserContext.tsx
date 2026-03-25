@@ -9,7 +9,7 @@ export type UserRole = "ADMIN" | "KITCHEN" | "STAFF" | "CUSTOMER";
 export interface Subscription {
     status: 'active' | 'inactive' | 'pending' | 'Pending Validation' | 'Confirmed';
     planName: string;
-    meals: number[]; // IDs of selected meals
+    meals: any[]; // Changed from number[]
     extras?: { id: string; name: string; price: number; quantity: number }[];
     total?: number;
     paymentMethod?: 'auto' | 'payid';
@@ -55,7 +55,7 @@ interface UserContextType {
     updateIsNotified: (id: string) => void;
     updateOrderStatus: (id: string, status: string) => void;
     cart: {
-        meals: number[];
+        meals: any[];
         extras: { id: string; name: string; price: number; quantity: number }[];
     };
     addToCart: (type: 'meal' | 'extra', item: any) => void;
@@ -115,30 +115,37 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const login = (email: string, role: UserRole) => {
         setIsLoading(true);
         setTimeout(() => {
-            const mockUser: User = {
-                id: Math.random().toString(36).substr(2, 9),
-                name: email.split("@")[0],
-                email,
-                role,
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-                referralCount: 0
-            };
-
-            const existing = localStorage.getItem("tropicalia_user");
-            if (existing) {
-                const parsed = JSON.parse(existing);
-                if (parsed.email === email) {
-                    mockUser.phone = parsed.phone;
-                    mockUser.referralCount = getReferralCount(parsed.phone);
-                }
+            if (role === "ADMIN" || email === "tropicaliahome.au@gmail.com") {
+                const mockUser: User = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: "Admin",
+                    email,
+                    role: "ADMIN",
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+                    referralCount: 0
+                };
+                setUser(mockUser);
+                localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
+                setIsLoading(false);
+                router.push('/admin/dashboard');
+                return;
             }
 
-            setUser(mockUser);
-            localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
-            setIsLoading(false);
+            const allUsersJson = localStorage.getItem("tropicalia_all_users") || "[]";
+            const allUsers = JSON.parse(allUsersJson);
+            const existingUser = allUsers.find((u: any) => u.email === email);
 
-            if (role === 'ADMIN') router.push('/admin/dashboard');
-            else router.push('/dashboard');
+            if (!existingUser) {
+                alert("Account not found. Please register first to access your profile.");
+                setIsLoading(false);
+                return;
+            }
+
+            existingUser.referralCount = getReferralCount(existingUser.phone);
+            setUser(existingUser);
+            localStorage.setItem("tropicalia_user", JSON.stringify(existingUser));
+            setIsLoading(false);
+            router.push('/dashboard');
         }, 800);
     };
 
@@ -212,7 +219,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         if (user.referralCount && user.referralCount >= 5) {
             finalSubscription.total = 0;
-            finalSubscription.planName = `🎁 SEMANA GRATIS! (${subscription.planName})`;
+            finalSubscription.planName = `🎁 FREE WEEK! (${subscription.planName})`;
 
             const updatedUser = { ...user, referralCount: 0, subscription: finalSubscription };
             try {
@@ -225,7 +232,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
             setUser(updatedUser);
             localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
-            alert("✅ ¡FELICIDADES! Has desbloqueado tu SEMANA GRATIS por traer a 5 amigos. Este pedido tiene un 100% de descuento.");
+            alert("✅ CONGRATULATIONS! You have unlocked your FREE WEEK for bringing 5 friends. This order has a 100% discount.");
         } else {
             const updatedUser = { ...user, subscription: finalSubscription };
             setUser(updatedUser);
@@ -251,6 +258,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
         };
 
         try {
+            // Send to Supabase
+            fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    status: "Pending Validation",
+                    total: subscription.total,
+                    paymentMethod: subscription.paymentMethod || 'payid',
+                    cart: cart
+                })
+            }).then(res => res.json()).then(data => {
+                console.log("Order saved to Supabase", data);
+            }).catch(e => console.error("Failed to save to Supabase", e));
+
             const finalSubscriptionWithId = { ...finalSubscription, orderId };
             const updatedUserFinal = { ...user, subscription: finalSubscriptionWithId };
             setUser(updatedUserFinal);
@@ -267,13 +291,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
             });
         } catch (e) {
             console.error("Critical Storage Error:", e);
-            alert("⚠️ Error de Almacenamiento: El comprobante es demasiado pesado o el historial está lleno. Por favor, intenta con una imagen más pequeña o limpia el caché del navegador.");
+            alert("⚠️ Storage Error: Browser cache is full. Please clear it and try again.");
         }
     };
 
     // Cart State
     const [cart, setCart] = useState<{
-        meals: number[];
+        meals: any[];
         extras: { id: string; name: string; price: number; quantity: number }[];
     }>({
         meals: [],
@@ -285,7 +309,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (type === 'meal') {
             setCart(prev => ({
                 ...prev,
-                meals: prev.meals.includes(item.id) ? prev.meals : [...prev.meals, item.id]
+                meals: prev.meals.some((m: any) => m.id === item.id) ? prev.meals : [...prev.meals, item]
             }));
         } else {
             setCart(prev => {
@@ -308,7 +332,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (type === 'meal') {
             setCart(prev => ({
                 ...prev,
-                meals: prev.meals.filter(mId => mId !== id)
+                meals: prev.meals.filter((m: any) => m.id !== id)
             }));
         } else {
             setCart(prev => ({

@@ -60,7 +60,7 @@
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     background: var(--background);
-    color: var(--text-main);
+    color: #1f2937; /* ensure dark text for readability on light background */
     font-family: var(--font-body);
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }

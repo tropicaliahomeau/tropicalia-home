@@ -14,3 +14,4 @@ export async function GET(request: NextRequest) {
     // Let's return all for the list view
     return NextResponse.json(MOCK_FINANCE);
 }
+
