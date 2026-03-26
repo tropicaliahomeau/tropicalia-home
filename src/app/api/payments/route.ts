@@ -24,6 +24,7 @@ export async function POST(request: Request) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+                'Square-Version': '2024-01-18'
             },
             body: JSON.stringify({
                 source_id: sourceId,
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
         const squareData = await squareResponse.json();
 
         if (!squareResponse.ok || squareData.errors) {
-            console.error('Square Payment Error:', squareData.errors);
+            console.error('Square Payment Error Details:', JSON.stringify(squareData, null, 2));
             return NextResponse.json(
                 { success: false, error: 'Error procesando el pago con la tarjeta.' }, 
                 { status: 400 }
@@ -109,7 +110,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, orderId: orderId, paymentId: squareData.payment.id });
 
     } catch (error: any) {
-        console.error('API /api/payments Error:', error);
+        console.error('API /api/payments Error - FULL TRACE:', error);
+        console.error('Error Details / Error Message:', error?.message);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
