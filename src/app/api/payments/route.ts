@@ -19,7 +19,7 @@ export async function POST(request: Request) {
         // E.g., $18.00 -> 1800
         const amountInCents = Math.round(amount * 100);
 
-        const squareResponse = await fetch('https://connect.squareupsandbox.com/v2/payments', {
+        const squareResponse = await fetch('https://connect.squareup.com/v2/payments', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
