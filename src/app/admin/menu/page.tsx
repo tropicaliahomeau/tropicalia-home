@@ -192,21 +192,20 @@ export default function AdminMenuPage() {
                                         {week.name} {isEnabled && '🔓'} {!isEnabled && '🔒'}
                                     </button>
                                     
-                                    {isEnabled ? (
-                                        <button 
-                                            onClick={() => toggleWeekEnabled(week.id, false)}
-                                            className="w-full text-xs font-black text-white bg-green-600 px-3 py-2 rounded-lg hover:bg-green-700 uppercase tracking-widest shadow-sm shadow-green-600/20"
-                                        >
-                                            Deshabilitar Semana
-                                        </button>
-                                    ) : (
+                                    <div className="flex gap-2 w-full mt-2">
                                         <button 
                                             onClick={() => toggleWeekEnabled(week.id, true)}
-                                            className="w-full text-xs font-bold text-gray-600 border-2 border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-200 hover:border-gray-400 uppercase tracking-widest"
+                                            className={`flex-1 text-xs font-black px-3 py-2 rounded-lg uppercase tracking-widest transition-all ${isEnabled ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 ring-2 ring-green-300 ring-offset-1' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
                                         >
-                                            Habilitar Semana
+                                            ON
                                         </button>
-                                    )}
+                                        <button 
+                                            onClick={() => toggleWeekEnabled(week.id, false)}
+                                            className={`flex-1 text-xs font-black px-3 py-2 rounded-lg uppercase tracking-widest transition-all ${!isEnabled ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 ring-2 ring-red-300 ring-offset-1' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                        >
+                                            OFF
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}

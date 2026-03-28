@@ -23,6 +23,7 @@ export default function MenuPage() {
     const [extraItems, setExtraItems] = useState<any[]>([]);
     const [loadingExtras, setLoadingExtras] = useState(true);
     const [activeWeekId, setActiveWeekId] = useState<string | null>(null);
+    const [allWeeks, setAllWeeks] = useState<any[]>([]);
 
     const TABS = [
         { id: 'days', label: 'By Day' },
@@ -36,16 +37,18 @@ export default function MenuPage() {
                 // Fetch weekly_menus to know which week is active
                 const { data: weeksData, error: weeksError } = await supabase
                     .from('weekly_menus')
-                    .select('*');
+                    .select('*')
+                    .order('start_date', { ascending: true });
                 
                 if (!weeksError && weeksData) {
+                    setAllWeeks(weeksData);
                     const activeWk = weeksData.find(w => w.is_enabled === true);
                     if (activeWk) {
                         setActiveWeekId(activeWk.id);
                         setSelectedWeek(activeWk.id); // set automatically
                     } else {
                         setActiveWeekId(null);
-                        setSelectedWeek(null);
+                        setSelectedWeek(weeksData[0]?.id || null);
                     }
                 }
 
@@ -122,15 +125,7 @@ export default function MenuPage() {
 
     const currentWeekData = MENUS.find(w => w.id === selectedWeek);
 
-    if (!loadingExtras && !activeWeekId) {
-        return (
-            <div className="container mx-auto px-4 py-32 text-center text-gray-500 min-h-[50vh] flex flex-col justify-center items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
-                <h2 className="text-2xl font-black text-gray-700 mb-2">No menu available this week.</h2>
-                <p className="text-gray-500 italic">Check back soon!</p>
-            </div>
-        );
-    }
+
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -140,6 +135,21 @@ export default function MenuPage() {
                     <h1 className="text-4xl font-black text-gray-800 mb-2">Tropicalia Menu</h1>
                     <p className="text-gray-600 text-lg italic">Select your favorite dishes organized by category.</p>
                 </div>
+
+                {/* Week Selector Tabs */}
+                {allWeeks.length > 0 && (
+                    <div className="flex justify-center mb-6 gap-2 flex-wrap">
+                        {allWeeks.map(wk => (
+                            <button
+                                key={wk.id}
+                                onClick={() => setSelectedWeek(wk.id)}
+                                className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${selectedWeek === wk.id ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                            >
+                                {wk.title}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Main Tabs */}
                 <div className="flex justify-center mb-6 gap-4 overflow-x-auto pb-2">
@@ -161,6 +171,12 @@ export default function MenuPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <div className="lg:col-span-3">
+                        {selectedWeek !== activeWeekId && (
+                            <div className="mb-6 p-3 bg-gray-50 rounded-xl text-center border border-gray-200">
+                                <p className="text-gray-500 font-bold text-sm">🔒 This week is not available for ordering yet</p>
+                            </div>
+                        )}
+
                         {/* 1. POR DÍAS */}
                         {activeTab === 'days' && currentWeekData && (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
@@ -216,9 +232,9 @@ export default function MenuPage() {
                                                         {isSelected ? 'REMOVE' : 'SELECT'}
                                                     </button>
                                                 ) : (
-                                                    <div className="mt-auto w-full py-3 rounded-xl text-center text-xs font-bold text-gray-400 border border-gray-100 bg-gray-50">
-                                                        Not available for ordering
-                                                    </div>
+                                                    <button disabled className="mt-auto w-full py-3 rounded-xl text-sm font-black transition-all border-2 bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed">
+                                                        Not Available
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>
@@ -261,9 +277,9 @@ export default function MenuPage() {
                                             Add Full Week
                                         </button>
                                     ) : (
-                                        <div className="w-full py-4 rounded-full font-black text-base text-gray-400 bg-gray-100">
-                                            Not available for ordering
-                                        </div>
+                                        <button disabled className="w-full py-4 rounded-full font-black text-lg bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed">
+                                            Not Available
+                                        </button>
                                     )}
                                 </div>
                             </div>

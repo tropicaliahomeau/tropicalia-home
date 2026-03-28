@@ -3,85 +3,52 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
-// Pin Pad Component
-const PinPad = ({ onCorrectPin }: { onCorrectPin: () => void }) => {
-    const [pin, setPin] = useState('');
-    const [error, setError] = useState(false);
-    const CORRECT_PIN = '0421';
 
-    const handleInput = (num: string) => {
-        if (pin.length < 4) {
-            const newPin = pin + num;
-            setPin(newPin);
-            if (newPin.length === 4) {
-                if (newPin === CORRECT_PIN) {
-                    // Set cookie for middleware - 12 hours session
-                    document.cookie = "kitchen_auth=true; path=/; max-age=43200";
-                    onCorrectPin();
-                } else {
-                    setError(true);
-                    setTimeout(() => {
-                        setPin('');
-                        setError(false);
-                    }, 1000);
-                }
-            }
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-[100] px-4">
-            <div className="max-w-xs w-full bg-white rounded-[2.5rem] p-8 shadow-2xl text-center">
-                <h2 className="text-2xl font-black text-gray-800 mb-2">Kitchen Access</h2>
-                <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-8">Ingresa el PIN de Acceso</p>
-
-                <div className="flex justify-center gap-4 mb-10">
-                    {[0, 1, 2, 3].map((i) => (
-                        <div key={i} className={`w-4 h-4 rounded-full border-2 transition-all duration-300 ${pin.length > i ? 'bg-[#4A5D23] border-[#4A5D23] scale-125' : 'border-gray-200'
-                            } ${error ? 'bg-red-500 border-red-500 animate-shake' : ''}`}></div>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((btn, i) => (
-                        <button
-                            key={i}
-                            disabled={btn === ''}
-                            onClick={() => btn === '⌫' ? setPin(pin.slice(0, -1)) : handleInput(btn)}
-                            className={`h-16 rounded-2xl flex items-center justify-center text-xl font-black transition-all active:scale-90
-                            ${btn === '' ? 'opacity-0' : 'bg-gray-50 text-gray-800 hover:bg-gray-100'}`}
-                        >
-                            {btn}
-                        </button>
-                    ))}
-                </div>
-
-                {error && <p className="text-red-500 font-bold text-xs mt-6 uppercase tracking-widest animate-pulse">PIN Incorrecto</p>}
-            </div>
-            <p className="mt-8 text-gray-500 text-xs font-bold uppercase tracking-widest">Tropicalia Latin Food Australia</p>
-        </div>
-    );
-};
 
 export default function KitchenDashboard() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [orders, setOrders] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [weekMap, setWeekMap] = useState<Record<number, string>>({});
+    const [isSundayReset, setIsSundayReset] = useState(false);
 
     useEffect(() => {
-        // Check for existing session cookie
-        const hasSession = document.cookie.split('; ').find(row => row.startsWith('kitchen_auth=true'));
-        if (hasSession) {
-            setIsAuthenticated(true);
-        }
-
         const loadOrders = async () => {
             try {
-                // Fetch orders and their nested order_items
+                // Determine if we should show zero totals due to Sunday reset
+                const now = new Date();
+                const sydneyTimeStr = now.toLocaleString('en-US', { timeZone: 'Australia/Sydney' });
+                const sydneyTime = new Date(sydneyTimeStr);
+                const isReset = sydneyTime.getDay() === 0 && sydneyTime.getHours() >= 21;
+                setIsSundayReset(isReset);
+
+                // Fetch active week map
+                const { data: activeWeekArr } = await supabase
+                    .from('weekly_menus')
+                    .select('id')
+                    .eq('is_enabled', true)
+                    .limit(1);
+                
+                if (activeWeekArr && activeWeekArr.length > 0) {
+                    const activeWeekId = activeWeekArr[0].id;
+                    const { data: weekItems } = await supabase
+                        .from('weekly_menu_items')
+                        .select('menu_item_id, day_of_week')
+                        .eq('weekly_menu_id', activeWeekId);
+                        
+                    if (weekItems) {
+                        const map: Record<number, string> = {};
+                        weekItems.forEach((wi: any) => {
+                            map[wi.menu_item_id] = wi.day_of_week;
+                        });
+                        setWeekMap(map);
+                    }
+                }
+
+                // Fetch orders and their nested order_items + menu item names
                 const { data: ordersData, error } = await supabase
                     .from('orders')
-                    .select('*, order_items(*)')
-                    .in('estado', ['pagado', 'preparando', 'entregado'])
+                    .select('*, order_items(*, menu_items(nombre))')
+                    .not('estado', 'in', '("picked_up","cancelled")')
                     .order('created_at', { ascending: false });
 
                 if (error) {
@@ -97,39 +64,28 @@ export default function KitchenDashboard() {
             }
         };
 
-        if (isAuthenticated) {
-            loadOrders();
-            const interval = setInterval(loadOrders, 5000);
-            return () => clearInterval(interval);
-        }
-    }, [isAuthenticated]);
+        const interval = setInterval(loadOrders, 5000);
+        loadOrders();
+        return () => clearInterval(interval);
+    }, []);
 
     const changeStatus = async (orderId: number, newStatus: string) => {
         try {
             await supabase.from('orders').update({ estado: newStatus }).eq('id', orderId);
-            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: newStatus } : o));
+            setOrders(orders.filter(o => o.id !== orderId));
+            alert('Order marked as picked up ✓');
         } catch (e) {
             console.error('Failed to change status', e);
         }
     };
 
-    // Sorting: Pending/Preparing first, Delivered last
-    const sortedOrders = [...orders].sort((a, b) => {
-        const aIsDone = a.estado === 'entregado';
-        const bIsDone = b.estado === 'entregado';
-        if (aIsDone === bIsDone) return 0;
-        return aIsDone ? 1 : -1;
-    });
-
-    const filteredOrders = sortedOrders.filter(order =>
+    const filteredOrders = orders.filter(order =>
         (order.telefono || '').includes(searchTerm) ||
         (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (order.id || '').toString().includes(searchTerm)
     );
 
-    if (!isAuthenticated) {
-        return <PinPad onCorrectPin={() => setIsAuthenticated(true)} />;
-    }
+
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] pb-20 font-sans">
@@ -142,18 +98,20 @@ export default function KitchenDashboard() {
                         <div className="flex-1">
                             <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-4">DAILY TOTALS (CURRENT CYCLE)</h3>
                             <div className="grid grid-cols-5 gap-2">
-                                {['LUN', 'MAR', 'MIE', 'JUE', 'VIE'].map((day, idx) => {
-                                    const dayNames = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
-                                    const count = orders.filter(o => {
-                                        const isDone = o.estado === 'entregado';
-                                        if (isDone) return false;
-                                        // Count order_items that are meals
-                                        return o.order_items?.some((i: any) => i.tipo === 'meal' && i.nombre.toLowerCase().includes(dayNames[idx]));
-                                    }).length;
+                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map((day) => {
+                                    const count = isSundayReset ? 0 : orders.reduce((sum, o) => {
+                                        return sum + (o.order_items || []).reduce((itemSum: number, i: any) => {
+                                            const itemDay = weekMap[i.menu_item_id];
+                                            if (itemDay === day) {
+                                                return itemSum + (i.cantidad || 1);
+                                            }
+                                            return itemSum;
+                                        }, 0);
+                                    }, 0);
 
                                     return (
                                         <div key={day} className="bg-white/5 rounded-2xl p-3 text-center border border-white/5">
-                                            <p className="text-[10px] font-bold text-gray-400 mb-1">{day}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 mb-1">{day.substring(0,3).toUpperCase()}</p>
                                             <p className="text-xl font-black">{count}</p>
                                         </div>
                                     );
@@ -208,20 +166,7 @@ export default function KitchenDashboard() {
                         </div>
                     </div>
 
-                    <div className="flex gap-4">
-                        <div className="text-center bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">PENDING</p>
-                            <p className="text-2xl font-black text-orange-500">
-                                {orders.filter(o => o.estado === 'pagado' || o.estado === 'preparando').length}
-                            </p>
-                        </div>
-                        <div className="text-center bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Listos</p>
-                            <p className="text-2xl font-black text-[#4A5D23]">
-                                {orders.filter(o => o.estado === 'entregado').length}
-                            </p>
-                        </div>
-                    </div>
+
                 </div>
             </header>
 
@@ -238,19 +183,17 @@ export default function KitchenDashboard() {
 
                 <div className="space-y-3">
                     {filteredOrders.map((order) => {
-                        const isDone = order.estado === 'entregado';
                         const allergies = order.order_items?.filter((i: any) => i.notas).map((i: any) => i.notas).join(', ') || '';
                         const hasAllergies = allergies.length > 0;
 
                         return (
-                            <div key={order.id} className={`bg-white rounded-[1.5rem] shadow-sm border transition-all ${isDone ? 'opacity-50 grayscale bg-gray-50 border-gray-200' : 'border-gray-100 hover:shadow-md'
-                                }`}>
+                            <div key={order.id} className="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 hover:shadow-md transition-all">
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center p-4 md:p-5">
                                     {/* Order # */}
                                     <div className="lg:col-span-1 border-r border-gray-50 lg:pr-4">
                                         <div className="flex items-center justify-between lg:block">
                                             <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase"># ORDER</span>
-                                            <div className="font-black text-gray-800 text-lg">#{order.id}</div>
+                                            <div className="font-black text-gray-800 text-lg">#{order.order_number || order.id}</div>
                                         </div>
                                     </div>
 
@@ -288,44 +231,63 @@ export default function KitchenDashboard() {
 
                                     {/* Order Detail */}
                                     <div className="lg:col-span-3">
-                                        <div className="flex items-center justify-between lg:block max-h-32 overflow-y-auto">
+                                        <div className="flex items-center justify-between lg:block max-h-32 overflow-y-auto pr-2 custom-scrollbar">
                                             <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">ORDER DETAIL</span>
-                                            <div className="flex flex-col gap-1 w-full text-right lg:text-left">
-                                                {order.order_items?.map((item: any) => (
-                                                    <p key={item.id} className="text-xs font-bold text-gray-900 leading-tight">
-                                                        <span className="text-[#4A5D23]">{item.cantidad}x</span> {item.nombre}
-                                                    </p>
-                                                ))}
+                                            <div className="flex flex-col gap-3 w-full text-right lg:text-left">
+                                                {(() => {
+                                                    const meals: any[] = [];
+                                                    const drinks: any[] = [];
+                                                    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+                                                    (order.order_items || []).forEach((item: any) => {
+                                                        const reqDay = weekMap[item.menu_item_id];
+                                                        const itemName = item.menu_items?.nombre || 'Unknown Item';
+                                                        if (reqDay) {
+                                                            meals.push({ day: reqDay, qty: item.cantidad || 1 });
+                                                        } else {
+                                                            drinks.push({ name: itemName, qty: item.cantidad || 1 });
+                                                        }
+                                                    });
+
+                                                    meals.sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
+
+                                                    return (
+                                                        <>
+                                                            {meals.length > 0 && (
+                                                                <div>
+                                                                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">🍽️ Meals</p>
+                                                                    {meals.map((m, idx) => (
+                                                                        <p key={'m'+idx} className="text-xs font-bold text-gray-900 leading-tight">
+                                                                            <span className="text-[#4A5D23] font-black uppercase">{m.day.substring(0,3)}</span> — {m.qty}x
+                                                                        </p>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {drinks.length > 0 && (
+                                                                <div>
+                                                                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1 mt-2">🥤 Drinks & Others</p>
+                                                                    {drinks.map((d, idx) => (
+                                                                        <p key={'d'+idx} className="text-xs font-bold text-gray-900 leading-tight">
+                                                                            <span className="text-blue-500 font-black">{d.qty}x</span> {d.name}
+                                                                        </p>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Actions */}
                                     <div className="lg:col-span-2 flex flex-col gap-2 justify-end">
-                                        {order.estado === 'pagado' && (
-                                            <button
-                                                onClick={() => changeStatus(order.id, 'preparando')}
-                                                className="w-full lg:w-fit px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-orange-500 text-white shadow-md hover:bg-orange-600"
-                                            >
-                                                Prepping
-                                            </button>
-                                        )}
-                                        {(order.estado === 'pagado' || order.estado === 'preparando') && (
-                                            <button
-                                                onClick={() => changeStatus(order.id, 'entregado')}
-                                                className="w-full lg:w-fit px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-[#4A5D23] text-white shadow-md hover:bg-[#3a491c]"
-                                            >
-                                                Deliver
-                                            </button>
-                                        )}
-                                        {order.estado === 'entregado' && (
-                                            <button
-                                                onClick={() => changeStatus(order.id, 'preparando')}
-                                                className="w-full lg:w-fit px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-gray-200 text-gray-600 hover:bg-gray-300"
-                                            >
-                                                Undo
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => changeStatus(order.id, 'picked_up')}
+                                            className="w-full lg:w-fit px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 bg-[#4A5D23] text-white shadow-md hover:bg-[#3a491c]"
+                                        >
+                                            Picked Up ✓
+                                        </button>
                                     </div>
                                 </div>
                             </div>

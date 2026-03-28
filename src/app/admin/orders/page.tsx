@@ -99,7 +99,7 @@ export default function AdminOrders() {
                                 filteredOrders.map((order) => (
                                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-l-4 border-l-transparent hover:border-l-[#4A5D23]">
-                                            #{order.id}
+                                            #{order.order_number || order.id}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-sm font-bold text-gray-900">{order.nombre_cliente}</div>

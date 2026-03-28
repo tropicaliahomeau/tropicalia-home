@@ -126,7 +126,7 @@ export async function POST(request: Request) {
             }
         }
 
-        return NextResponse.json({ success: true, orderId: orderId, paymentId: squareData.payment.id });
+        return NextResponse.json({ success: true, orderId: orderData.order_number || orderData.id, paymentId: squareData.payment.id });
 
     } catch (error: any) {
         console.error('API /api/payments Error - FULL TRACE:', error);
