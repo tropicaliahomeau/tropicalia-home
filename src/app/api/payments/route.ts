@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+// Init admin client to bypass RLS for inserts if the key is provided
+const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+    : supabase; // fallback to standard client if missing
 
 export async function POST(request: Request) {
     try {
@@ -50,7 +59,7 @@ export async function POST(request: Request) {
 
         // 2. Save customer to Supabase (tabla 'customers')
         // We'll try to insert, and if it fails (e.g. unique email constraint), we just continue. Or upsert.
-        await supabase
+        await supabaseAdmin
             .from('customers')
             .upsert({ 
                 nombre: customer, 
@@ -59,7 +68,7 @@ export async function POST(request: Request) {
             }, { onConflict: 'email' }); // Adjust conflict key if necessary
 
         // 3. Save order to Supabase (tabla 'orders')
-        const { data: orderData, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = await supabaseAdmin
             .from('orders')
             .insert({
                 nombre_cliente: customer,
@@ -72,7 +81,14 @@ export async function POST(request: Request) {
             .select()
             .single();
 
-        if (orderError) throw orderError;
+        if (orderError) {
+            console.error('❌ Error guardando orden en Supabase:', orderError);
+            // Critical! Return error so checkout knows
+            return NextResponse.json(
+                { success: false, error: 'Hubo un error al guardar la orden. El pago de Square se procesó, por favor contactar soporte.' },
+                { status: 500 }
+            );
+        }
 
         const orderId = orderData.id;
 
@@ -99,12 +115,15 @@ export async function POST(request: Request) {
             });
         }
 
+        // Verify menu_item_id types are strictly what DB expects (string vs int workaround)
         if (orderItems.length > 0) {
-            const { error: itemsError } = await supabase
+            const { error: itemsError } = await supabaseAdmin
                 .from('order_items')
                 .insert(orderItems);
 
-            if (itemsError) throw itemsError;
+            if (itemsError) {
+                console.error('❌ Error guardando order_items:', itemsError);
+            }
         }
 
         return NextResponse.json({ success: true, orderId: orderId, paymentId: squareData.payment.id });

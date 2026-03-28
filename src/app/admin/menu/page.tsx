@@ -61,20 +61,33 @@ export default function AdminMenuPage() {
         }
     }, [activeTab]);
 
-    const toggleActiveWeek = async (weekId: string) => {
-        if (!confirm('Are you sure you want to make this the active week? Only one week can be active at a time.')) return;
-        
+    const toggleWeekEnabled = async (weekId: string, enable: boolean) => {
         try {
-            // First, set all to inactive
-            await supabase.from('weekly_menus').update({ activo: false }).neq('id', 'INVALID');
-            // Then, set target to active
-            await supabase.from('weekly_menus').update({ activo: true }).eq('id', weekId);
-            
-            // Refresh
+            if (enable) {
+                // PRIMERO: deshabilitar TODAS las semanas
+                await supabase
+                    .from('weekly_menus')
+                    .update({ is_enabled: false })
+                    .neq('id', weekId);
+                
+                // SEGUNDO: habilitar la seleccionada
+                await supabase
+                    .from('weekly_menus')
+                    .update({ is_enabled: true })
+                    .eq('id', weekId);
+                alert('✅ Week Enabled. Customers can now place orders.');
+            } else {
+                // Solo deshabilitar esta
+                await supabase
+                    .from('weekly_menus')
+                    .update({ is_enabled: false })
+                    .eq('id', weekId);
+                alert('🔒 Week disabled.');
+            }
+            // Refrescar estado local
             await fetchWeeks();
-            alert(`Week ${weekId} is now active.`);
         } catch (e) {
-            console.error('Error updating week', e);
+            console.error('Error toggling week', e);
             alert('Failed to update week status.');
         }
     };
@@ -165,27 +178,33 @@ export default function AdminMenuPage() {
                     <div className="flex gap-4 overflow-x-auto">
                         {MENUS.map(week => {
                             const dbWeek = weeksData.find(w => w.id === week.id);
-                            const isActive = dbWeek?.activo === true;
+                            const isEnabled = dbWeek?.is_enabled === true;
                             
                             return (
-                                <div key={week.id} className="flex flex-col items-center gap-2">
+                                <div key={week.id} className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${isEnabled ? 'border-green-500 bg-green-50/30' : 'border-gray-200 bg-gray-50 opacity-80'}`}>
                                     <button
                                         onClick={() => setSelectedWeekId(week.id)}
-                                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedWeekId === week.id
-                                            ? 'bg-[#4A5D23] text-white'
-                                            : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                        className={`px-6 py-3 rounded-lg font-bold transition-all w-full ${selectedWeekId === week.id
+                                            ? 'bg-gray-800 text-white shadow-md'
+                                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                                             }`}
                                     >
-                                        {week.name}
+                                        {week.name} {isEnabled && '🔓'} {!isEnabled && '🔒'}
                                     </button>
-                                    {isActive ? (
-                                        <span className="text-xs font-bold text-green-600 uppercase tracking-widest bg-green-50 px-2 py-1 rounded">Active</span>
+                                    
+                                    {isEnabled ? (
+                                        <button 
+                                            onClick={() => toggleWeekEnabled(week.id, false)}
+                                            className="w-full text-xs font-black text-white bg-green-600 px-3 py-2 rounded-lg hover:bg-green-700 uppercase tracking-widest shadow-sm shadow-green-600/20"
+                                        >
+                                            Deshabilitar Semana
+                                        </button>
                                     ) : (
                                         <button 
-                                            onClick={() => toggleActiveWeek(week.id)}
-                                            className="text-[10px] font-bold text-gray-400 border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 uppercase"
+                                            onClick={() => toggleWeekEnabled(week.id, true)}
+                                            className="w-full text-xs font-bold text-gray-600 border-2 border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-200 hover:border-gray-400 uppercase tracking-widest"
                                         >
-                                            Set Active
+                                            Habilitar Semana
                                         </button>
                                     )}
                                 </div>

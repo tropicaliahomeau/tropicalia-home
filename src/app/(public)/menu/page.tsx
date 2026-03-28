@@ -19,10 +19,10 @@ export default function MenuPage() {
 
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'days' | 'week' | 'extras'>('days');
-    const [selectedWeek, setSelectedWeek] = useState<string>('week-1');
+    const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
     const [extraItems, setExtraItems] = useState<any[]>([]);
     const [loadingExtras, setLoadingExtras] = useState(true);
-    const [activeWeekId, setActiveWeekId] = useState<string>('week-1');
+    const [activeWeekId, setActiveWeekId] = useState<string | null>(null);
 
     const TABS = [
         { id: 'days', label: 'By Day' },
@@ -39,8 +39,14 @@ export default function MenuPage() {
                     .select('*');
                 
                 if (!weeksError && weeksData) {
-                    const activeWk = weeksData.find(w => w.activo === true);
-                    if (activeWk) setActiveWeekId(activeWk.id);
+                    const activeWk = weeksData.find(w => w.is_enabled === true);
+                    if (activeWk) {
+                        setActiveWeekId(activeWk.id);
+                        setSelectedWeek(activeWk.id); // set automatically
+                    } else {
+                        setActiveWeekId(null);
+                        setSelectedWeek(null);
+                    }
                 }
 
                 // Fetch items that are NOT main meals
@@ -116,6 +122,16 @@ export default function MenuPage() {
 
     const currentWeekData = MENUS.find(w => w.id === selectedWeek);
 
+    if (!loadingExtras && !activeWeekId) {
+        return (
+            <div className="container mx-auto px-4 py-32 text-center text-gray-500 min-h-[50vh] flex flex-col justify-center items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
+                <h2 className="text-2xl font-black text-gray-700 mb-2">No menu available this week.</h2>
+                <p className="text-gray-500 italic">Check back soon!</p>
+            </div>
+        );
+    }
+
     return (
         <div className="container mx-auto px-4 py-8">
             <div className={styles.container}>
@@ -141,22 +157,7 @@ export default function MenuPage() {
                     ))}
                 </div>
 
-                {/* Week Selector */}
-                {(activeTab === 'days' || activeTab === 'week') && (
-                    <div className="flex justify-center mb-10 gap-3 border-b border-gray-100 pb-6 w-full max-w-2xl mx-auto overflow-x-auto">
-                        {MENUS.map(week => (
-                            <button
-                                key={week.id}
-                                onClick={() => setSelectedWeek(week.id)}
-                                className={`px-4 py-2 text-sm uppercase tracking-widest font-black transition-colors rounded-full ${
-                                    selectedWeek === week.id ? 'text-[#4A5D23] bg-green-50/50 outline outline-1 outline-[#4A5D23]' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                {week.name}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                {/* Main Tabs */}
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <div className="lg:col-span-3">
