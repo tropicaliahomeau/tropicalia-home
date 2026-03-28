@@ -11,7 +11,7 @@ export default function AboutPage() {
                     <div className="w-20 h-1.5 bg-[#4A5D23] mx-auto mb-10 rounded-full"></div>
 
                     <p className="text-xl md:text-2xl text-gray-700 leading-relaxed font-medium italic">
-                        "Somos una pareja de colombianos enamorados de la cocina y de los sabores de casa; llevamos a tu mesa comida casera, auténtica y llena de sabor, hecha con amor para seguir enamorando el paladar de nuestra comunidad."
+                        "We are a Colombian couple in love with cooking and homemade flavors; we bring authentic, flavorful, homemade food to your table, made with love to continue delighting the taste buds of our community."
                     </p>
 
                     <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 text-left">

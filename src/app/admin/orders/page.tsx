@@ -14,24 +14,7 @@ export default function AdminOrders() {
             try {
                 const { data, error } = await supabase
                     .from('orders')
-                    .select(`
-                        id,
-                        created_at,
-                        nombre_cliente,
-                        email_cliente,
-                        telefono,
-                        total,
-                        estado,
-                        metodo_pago,
-                        order_items (
-                            id,
-                            nombre,
-                            tipo,
-                            cantidad,
-                            precio_unitario,
-                            notas
-                        )
-                    `)
+                    .select('*, order_items(*)')
                     .order('created_at', { ascending: false });
 
                 if (!error && data) {

@@ -80,24 +80,7 @@ export default function KitchenDashboard() {
                 // Fetch orders and their nested order_items
                 const { data: ordersData, error } = await supabase
                     .from('orders')
-                    .select(`
-                        id,
-                        created_at,
-                        nombre_cliente,
-                        email_cliente,
-                        telefono,
-                        total,
-                        estado,
-                        metodo_pago,
-                        order_items (
-                            id,
-                            nombre,
-                            tipo,
-                            cantidad,
-                            precio_unitario,
-                            notas
-                        )
-                    `)
+                    .select('*, order_items(*)')
                     .in('estado', ['pagado', 'preparando', 'entregado'])
                     .order('created_at', { ascending: false });
 
@@ -298,7 +281,7 @@ export default function KitchenDashboard() {
                                                 ? 'bg-red-50 text-red-600 border-red-200 animate-pulse ring-4 ring-red-50'
                                                 : 'bg-gray-50 text-gray-300 border-gray-100'
                                                 }`}>
-                                                {hasAllergies ? allergies : 'Sin Alergias'}
+                                                {hasAllergies ? allergies : 'No Allergies'}
                                             </div>
                                         </div>
                                     </div>

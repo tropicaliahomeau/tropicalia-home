@@ -99,7 +99,7 @@ export default function DashboardPage() {
 
             const inactive = users.filter((u: any) => u.role === 'CUSTOMER' && !activeUserIds.has(u.id) && !activeUserIds.has(u.name));
 
-            const csvContent = "data:text/csv;charset=utf-8,Nombre,Email,Telefono,Alergias\n"
+            const csvContent = "data:text/csv;charset=utf-8,Name,Email,Phone,Allergies\n"
                 + inactive.map((u: any) => `${u.name},${u.email},${u.phone || 'N/A'},${u.allergies || 'Ninguna'}`).join("\n");
 
             const link = document.createElement("a");
@@ -181,12 +181,12 @@ export default function DashboardPage() {
                             <div className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full w-fit font-bold">ACTIVO</div>
                         </div>
                         <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between h-36 border-b-4 border-b-orange-400">
-                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pendientes</span>
+                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pending</span>
                             <div className="text-4xl font-black text-orange-500">{realKpis.pendingOrders}</div>
-                            <div className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full w-fit font-bold">COCINA</div>
+                            <div className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full w-fit font-bold">KITCHEN</div>
                         </div>
                         <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between h-36 border-b-4 border-b-red-400">
-                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Alergias</span>
+                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Allergies</span>
                             <div className="text-4xl font-black text-red-500">{realKpis.allergicCustomers}</div>
                             <div className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full w-fit font-bold">CRÍTICO</div>
                         </div>

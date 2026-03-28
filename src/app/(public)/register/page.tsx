@@ -32,12 +32,12 @@ export default function RegisterPage() {
         }
 
         if (hasAllergies && !allergyDetails.trim()) {
-            alert("Por favor describe tus alergias (máximo 5 palabras).");
+            alert("Please describe your allergies (max 5 words).");
             return;
         }
 
         if (hasAllergies && allergyDetails.trim().split(/\s+/).length > 5) {
-            alert("La descripción de alergias debe tener máximo 5 palabras.");
+            alert("Allergy description must be max 5 words.");
             return;
         }
 
