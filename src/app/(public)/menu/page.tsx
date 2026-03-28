@@ -22,6 +22,7 @@ export default function MenuPage() {
     const [selectedWeek, setSelectedWeek] = useState<string>('week-1');
     const [extraItems, setExtraItems] = useState<any[]>([]);
     const [loadingExtras, setLoadingExtras] = useState(true);
+    const [activeWeekId, setActiveWeekId] = useState<string>('week-1');
 
     const TABS = [
         { id: 'days', label: 'By Day' },
@@ -30,8 +31,18 @@ export default function MenuPage() {
     ] as const;
 
     useEffect(() => {
-        async function fetchExtras() {
+        async function fetchData() {
             try {
+                // Fetch weekly_menus to know which week is active
+                const { data: weeksData, error: weeksError } = await supabase
+                    .from('weekly_menus')
+                    .select('*');
+                
+                if (!weeksError && weeksData) {
+                    const activeWk = weeksData.find(w => w.activo === true);
+                    if (activeWk) setActiveWeekId(activeWk.id);
+                }
+
                 // Fetch items that are NOT main meals
                 const { data, error } = await supabase
                     .from('menu_items')
@@ -50,10 +61,11 @@ export default function MenuPage() {
                 setLoadingExtras(false);
             }
         }
-        fetchExtras();
+        fetchData();
     }, []);
 
     const toggleMeal = (item: any) => {
+        if (selectedWeek !== activeWeekId) return; // Prevent adding from inactive week
         if (cart.meals.some(m => m.id === item.id)) {
             removeFromCart('meal', item.id);
         } else {
@@ -68,6 +80,7 @@ export default function MenuPage() {
     };
 
     const addFullWeek = (meals: any[]) => {
+        if (selectedWeek !== activeWeekId) return; // Prevent adding from inactive week
         // Clear existing meals before adding full week to avoid duplicates or miscounting
         cart.meals.forEach(m => removeFromCart('meal', m.id));
         // Add all 5 meals
@@ -188,18 +201,24 @@ export default function MenuPage() {
                                                 </div>
                                                 <p className="text-sm text-gray-500 mb-4 line-clamp-3">{meal.description}</p>
 
-                                                <button
-                                                    className={`mt-auto w-full py-3 rounded-xl text-sm font-black transition-all border-2
-                                                            ${isSelected
-                                                            ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
-                                                            : 'bg-white border-gray-100 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleMeal(meal);
-                                                    }}
-                                                >
-                                                    {isSelected ? 'REMOVE' : 'SELECT'}
-                                                </button>
+                                                {selectedWeek === activeWeekId ? (
+                                                    <button
+                                                        className={`mt-auto w-full py-3 rounded-xl text-sm font-black transition-all border-2
+                                                                ${isSelected
+                                                                ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
+                                                                : 'bg-white border-gray-100 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleMeal(meal);
+                                                        }}
+                                                    >
+                                                        {isSelected ? 'REMOVE' : 'SELECT'}
+                                                    </button>
+                                                ) : (
+                                                    <div className="mt-auto w-full py-3 rounded-xl text-center text-xs font-bold text-gray-400 border border-gray-100 bg-gray-50">
+                                                        Not available for ordering
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -233,12 +252,18 @@ export default function MenuPage() {
                                         <span className="text-5xl font-black text-[#4A5D23]">$85.00</span>
                                     </div>
 
-                                    <button 
-                                        className="bg-[#4A5D23] text-white w-full py-4 rounded-full font-black text-lg hover:bg-[#3a491c] hover:scale-105 transition-all shadow-xl shadow-[#4A5D23]/30"
-                                        onClick={() => addFullWeek(currentWeekData.meals)}
-                                    >
-                                        Add Full Week
-                                    </button>
+                                    {selectedWeek === activeWeekId ? (
+                                        <button 
+                                            className="bg-[#4A5D23] text-white w-full py-4 rounded-full font-black text-lg hover:bg-[#3a491c] hover:scale-105 transition-all shadow-xl shadow-[#4A5D23]/30"
+                                            onClick={() => addFullWeek(currentWeekData.meals)}
+                                        >
+                                            Add Full Week
+                                        </button>
+                                    ) : (
+                                        <div className="w-full py-4 rounded-full font-black text-base text-gray-400 bg-gray-100">
+                                            Not available for ordering
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

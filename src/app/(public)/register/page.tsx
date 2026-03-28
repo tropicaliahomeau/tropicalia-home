@@ -197,7 +197,7 @@ export default function RegisterPage() {
                     </div>
 
                     <button type="submit" className={styles.button}>
-                        Create Account
+                        Registrarme
                     </button>
                 </form>
 

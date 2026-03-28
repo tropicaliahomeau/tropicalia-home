@@ -22,13 +22,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         📊 Dashboard
                     </Link>
                     <Link href="/admin/menu" className={`block px-4 py-3 rounded-xl font-medium transition-colors ${pathname === '/admin/menu' ? 'bg-[#4A5D23]/10 text-[#4A5D23]' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        🍽️ Gestión Menú
+                        🍽️ Menu Management
                     </Link>
                     <Link href="/admin/finance" className={`block px-4 py-3 rounded-xl font-medium transition-colors ${pathname === '/admin/finance' ? 'bg-[#4A5D23]/10 text-[#4A5D23]' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        💸 Gestión de Gastos
+                        💸 Expense Management
                     </Link>
                     <Link href="/admin/orders" className="block px-4 py-3 rounded-xl text-gray-700 hover:bg-[#4A5D23]/10 hover:text-[#4A5D23] font-medium transition-colors opacity-50 cursor-not-allowed">
-                        📦 Pedidos (Próx.)
+                        📦 Orders (Upcoming)
                     </Link>
                 </nav>
 
@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         }}
                         className="w-full py-2 border border-red-200 text-red-500 rounded-lg text-sm hover:bg-red-50 transition-colors"
                     >
-                        Cerrar Sesión
+                        Sign Out
                     </button>
                 </div>
             </aside>

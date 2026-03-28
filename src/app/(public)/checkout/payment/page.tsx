@@ -72,6 +72,7 @@ export default function PaymentPage() {
 
             if (data.success) {
                 setOrderNumber(data.orderId);
+                clearCart();
                 setIsSuccess(true);
             } else {
                 alert('Error processing payment: ' + data.error);

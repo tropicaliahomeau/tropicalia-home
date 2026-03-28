@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 // Pin Pad Component
 const PinPad = ({ onCorrectPin }: { onCorrectPin: () => void }) => {
@@ -31,7 +32,7 @@ const PinPad = ({ onCorrectPin }: { onCorrectPin: () => void }) => {
     return (
         <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-[100] px-4">
             <div className="max-w-xs w-full bg-white rounded-[2.5rem] p-8 shadow-2xl text-center">
-                <h2 className="text-2xl font-black text-gray-800 mb-2">Acceso Cocina</h2>
+                <h2 className="text-2xl font-black text-gray-800 mb-2">Kitchen Access</h2>
                 <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-8">Ingresa el PIN de Acceso</p>
 
                 <div className="flex justify-center gap-4 mb-10">
@@ -74,64 +75,72 @@ export default function KitchenDashboard() {
             setIsAuthenticated(true);
         }
 
-        // Load real orders from localStorage
-        const loadOrders = () => {
+        const loadOrders = async () => {
             try {
-                const ordersJson = localStorage.getItem("tropicalia_orders") || "[]";
-                const usersJson = localStorage.getItem("tropicalia_all_users") || "[]";
-                const users = JSON.parse(usersJson);
-                const rawOrders = JSON.parse(ordersJson);
+                // Fetch orders and their nested order_items
+                const { data: ordersData, error } = await supabase
+                    .from('orders')
+                    .select(`
+                        id,
+                        created_at,
+                        nombre_cliente,
+                        email_cliente,
+                        telefono,
+                        total,
+                        estado,
+                        metodo_pago,
+                        order_items (
+                            id,
+                            nombre,
+                            tipo,
+                            cantidad,
+                            precio_unitario,
+                            notas
+                        )
+                    `)
+                    .in('estado', ['pagado', 'preparando', 'entregado'])
+                    .order('created_at', { ascending: false });
 
-                // Enrich orders with possible allergy info from user profile if not in order
-                const enriched = rawOrders.map((o: any) => {
-                    const user = users.find((u: any) => u.id === o.customerId || u.name === o.customer);
-                    return {
-                        ...o,
-                        phone: o.phone || user?.phone || 'N/A',
-                        allergies: o.allergies || user?.allergies || ''
-                    };
-                });
+                if (error) {
+                    console.error('Error fetching orders:', error);
+                    return;
+                }
 
-                // Filter: Kitchen only sees orders that ARE confirmed/delivered, NOT those pending validation
-                const filtered = enriched.filter((o: any) =>
-                    o.status !== 'Pending Validation' && o.status !== 'pending'
-                );
-
-                setOrders(filtered);
+                if (ordersData) {
+                    setOrders(ordersData);
+                }
             } catch (e) {
                 console.error("Error loading kitchen orders:", e);
             }
         };
 
-        loadOrders();
-        // Sync every 5 seconds
-        const interval = setInterval(loadOrders, 5000);
-        return () => clearInterval(interval);
-    }, []);
+        if (isAuthenticated) {
+            loadOrders();
+            const interval = setInterval(loadOrders, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [isAuthenticated]);
 
-    const toggleStatus = (orderId: string) => {
-        const newOrders = orders.map(order => {
-            if (order.id === orderId) {
-                const newStatus = order.status.toLowerCase().includes('entregado') || order.status === 'Delivered' ? 'Preparing' : 'Delivered';
-                return { ...order, status: newStatus };
-            }
-            return order;
-        });
-        setOrders(newOrders);
-        localStorage.setItem("tropicalia_orders", JSON.stringify(newOrders));
+    const changeStatus = async (orderId: number, newStatus: string) => {
+        try {
+            await supabase.from('orders').update({ estado: newStatus }).eq('id', orderId);
+            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: newStatus } : o));
+        } catch (e) {
+            console.error('Failed to change status', e);
+        }
     };
 
-    // Sorting: Pending first, Delivered last
+    // Sorting: Pending/Preparing first, Delivered last
     const sortedOrders = [...orders].sort((a, b) => {
-        const aIsDone = a.status.toLowerCase().includes('entregado') || a.status === 'Delivered';
-        const bIsDone = b.status.toLowerCase().includes('entregado') || b.status === 'Delivered';
+        const aIsDone = a.estado === 'entregado';
+        const bIsDone = b.estado === 'entregado';
         if (aIsDone === bIsDone) return 0;
         return aIsDone ? 1 : -1;
     });
 
     const filteredOrders = sortedOrders.filter(order =>
-        (order.phone || '').includes(searchTerm) ||
-        (order.customer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.telefono || '').includes(searchTerm) ||
+        (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (order.id || '').toString().includes(searchTerm)
     );
 
@@ -148,16 +157,15 @@ export default function KitchenDashboard() {
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Daily Totals */}
                         <div className="flex-1">
-                            <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-4">Totales por Día (Ciclo Actual)</h3>
+                            <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-4">DAILY TOTALS (CURRENT CYCLE)</h3>
                             <div className="grid grid-cols-5 gap-2">
                                 {['LUN', 'MAR', 'MIE', 'JUE', 'VIE'].map((day, idx) => {
+                                    const dayNames = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
                                     const count = orders.filter(o => {
-                                        const isDone = o.status.toLowerCase().includes('entregado') || o.status === 'Delivered';
+                                        const isDone = o.estado === 'entregado';
                                         if (isDone) return false;
-                                        // Simple logic: if 'meal' string contains the day name or if it's 'Semana'
-                                        const dayNames = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
-                                        const dayNum = idx + 1;
-                                        return o.meal.toLowerCase().includes('semana') || (o.meals && o.meals.includes(dayNum));
+                                        // Count order_items that are meals
+                                        return o.order_items?.some((i: any) => i.tipo === 'meal' && i.nombre.toLowerCase().includes(dayNames[idx]));
                                     }).length;
 
                                     return (
@@ -174,18 +182,20 @@ export default function KitchenDashboard() {
                         <div className="flex-1 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-8">
                             <h3 className="text-xs font-black uppercase text-red-400 tracking-widest mb-4 flex items-center gap-2">
                                 <span className="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                                Consolidado de Alergias
+                                ALLERGY SUMMARY
                             </h3>
                             <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                                {orders.filter(o => o.allergies && o.allergies.toLowerCase() !== 'ninguna' && o.allergies !== '').length > 0 ? (
-                                    orders.filter(o => o.allergies && o.allergies.toLowerCase() !== 'ninguna' && o.allergies !== '').map((o, idx) => (
+                                {orders.filter(o => o.order_items?.some((item: any) => item.notas && item.notas.trim() !== '')).length > 0 ? (
+                                    orders.filter(o => o.order_items?.some((item: any) => item.notas && item.notas.trim() !== '')).map((o, idx) => (
                                         <div key={idx} className="flex justify-between items-center text-[11px] bg-red-500/10 p-2 rounded-xl border border-red-500/20">
-                                            <span className="font-bold text-red-200">{o.customer}</span>
-                                            <span className="font-black text-red-500 uppercase">{o.allergies}</span>
+                                            <span className="font-bold text-red-200">{o.nombre_cliente}</span>
+                                            <span className="font-black text-red-500 uppercase">
+                                                {o.order_items.filter((i: any) => i.notas).map((i: any) => i.notas).join(', ')}
+                                            </span>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-gray-500 font-bold text-xs italic">No hay requerimientos especiales</p>
+                                    <p className="text-gray-500 font-bold text-xs italic">No special requirements</p>
                                 )}
                             </div>
                         </div>
@@ -197,16 +207,16 @@ export default function KitchenDashboard() {
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                            Cocina <span className="text-[#4A5D23] animate-pulse">●</span>
+                            Kitchen <span className="text-[#4A5D23] animate-pulse">●</span>
                         </h1>
-                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Lista Operativa de Pedidos</p>
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">OPERATIONAL ORDER LIST</p>
                     </div>
 
                     <div className="relative w-full md:w-96">
                         <input
                             type="text"
                             className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#4A5D23] transition-all font-medium text-sm"
-                            placeholder="Buscar por Teléfono o Cliente..."
+                            placeholder="Search by Phone or Customer..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -217,15 +227,15 @@ export default function KitchenDashboard() {
 
                     <div className="flex gap-4">
                         <div className="text-center bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pendientes</p>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">PENDING</p>
                             <p className="text-2xl font-black text-orange-500">
-                                {orders.filter(o => !o.status.toLowerCase().includes('entregado') && o.status !== 'Delivered').length}
+                                {orders.filter(o => o.estado === 'pagado' || o.estado === 'preparando').length}
                             </p>
                         </div>
                         <div className="text-center bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm">
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Listos</p>
                             <p className="text-2xl font-black text-[#4A5D23]">
-                                {orders.filter(o => o.status.toLowerCase().includes('entregado') || o.status === 'Delivered').length}
+                                {orders.filter(o => o.estado === 'entregado').length}
                             </p>
                         </div>
                     </div>
@@ -235,18 +245,19 @@ export default function KitchenDashboard() {
             <main className="max-w-7xl mx-auto px-4 md:px-6 mt-8">
                 {/* Compact List Headers - Desktop Only */}
                 <div className="hidden lg:grid grid-cols-12 gap-4 px-6 mb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    <div className="col-span-1"># Orden</div>
-                    <div className="col-span-2">Cliente</div>
-                    <div className="col-span-2">Teléfono</div>
-                    <div className="col-span-2">Alergias</div>
-                    <div className="col-span-3">Detalle Pedido</div>
+                    <div className="col-span-1"># ORDER</div>
+                    <div className="col-span-2">CUSTOMER</div>
+                    <div className="col-span-2">PHONE</div>
+                    <div className="col-span-2">ALLERGIES</div>
+                    <div className="col-span-3">ORDER DETAIL</div>
                     <div className="col-span-2 text-right">Acción</div>
                 </div>
 
                 <div className="space-y-3">
                     {filteredOrders.map((order) => {
-                        const isDone = order.status.toLowerCase().includes('entregado') || order.status === 'Delivered';
-                        const hasAllergies = order.allergies && order.allergies.toLowerCase() !== 'ninguna' && order.allergies !== '';
+                        const isDone = order.estado === 'entregado';
+                        const allergies = order.order_items?.filter((i: any) => i.notas).map((i: any) => i.notas).join(', ') || '';
+                        const hasAllergies = allergies.length > 0;
 
                         return (
                             <div key={order.id} className={`bg-white rounded-[1.5rem] shadow-sm border transition-all ${isDone ? 'opacity-50 grayscale bg-gray-50 border-gray-200' : 'border-gray-100 hover:shadow-md'
@@ -255,7 +266,7 @@ export default function KitchenDashboard() {
                                     {/* Order # */}
                                     <div className="lg:col-span-1 border-r border-gray-50 lg:pr-4">
                                         <div className="flex items-center justify-between lg:block">
-                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase"># Orden</span>
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase"># ORDER</span>
                                             <div className="font-black text-gray-800 text-lg">#{order.id}</div>
                                         </div>
                                     </div>
@@ -263,18 +274,18 @@ export default function KitchenDashboard() {
                                     {/* Customer */}
                                     <div className="lg:col-span-2">
                                         <div className="flex items-center justify-between lg:block">
-                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Cliente</span>
-                                            <div className="font-bold text-gray-900 truncate">{order.customer}</div>
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">CUSTOMER</span>
+                                            <div className="font-bold text-gray-900 truncate">{order.nombre_cliente}</div>
                                         </div>
                                     </div>
 
                                     {/* Phone Link */}
                                     <div className="lg:col-span-2">
                                         <div className="flex items-center justify-between lg:block">
-                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Teléfono</span>
-                                            <a href={`tel:${order.phone}`} className="inline-flex items-center gap-1.5 text-[#4A5D23] font-black hover:text-[#3a491c] transition-colors bg-green-50/50 px-3 py-1.5 rounded-xl border border-green-100/50">
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">PHONE</span>
+                                            <a href={`tel:${order.telefono}`} className="inline-flex items-center gap-1.5 text-[#4A5D23] font-black hover:text-[#3a491c] transition-colors bg-green-50/50 px-3 py-1.5 rounded-xl border border-green-100/50">
                                                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z" /></svg>
-                                                {order.phone}
+                                                {order.telefono || 'N/A'}
                                             </a>
                                         </div>
                                     </div>
@@ -282,47 +293,56 @@ export default function KitchenDashboard() {
                                     {/* Allergies Highlight */}
                                     <div className="lg:col-span-2">
                                         <div className="flex items-center justify-between lg:block">
-                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Alergias</span>
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">ALLERGIES</span>
                                             <div className={`font-black text-[10px] uppercase px-3 py-1.5 rounded-xl inline-block border ${hasAllergies
                                                 ? 'bg-red-50 text-red-600 border-red-200 animate-pulse ring-4 ring-red-50'
                                                 : 'bg-gray-50 text-gray-300 border-gray-100'
                                                 }`}>
-                                                {hasAllergies ? order.allergies : 'Sin Alergias'}
+                                                {hasAllergies ? allergies : 'Sin Alergias'}
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Order Detail */}
                                     <div className="lg:col-span-3">
-                                        <div className="flex items-center justify-between lg:block">
-                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">Detalle</span>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900 leading-tight">{order.meal}</p>
-                                                {order.extras && order.extras.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1 mt-2">
-                                                        {order.extras.map((e: any, idx: number) => (
-                                                            <span key={idx} className="text-[9px] font-black text-[#4A5D23] bg-green-50 px-2 py-0.5 rounded-md border border-green-100 uppercase">
-                                                                {e.quantity}x {e.name}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                        <div className="flex items-center justify-between lg:block max-h-32 overflow-y-auto">
+                                            <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">ORDER DETAIL</span>
+                                            <div className="flex flex-col gap-1 w-full text-right lg:text-left">
+                                                {order.order_items?.map((item: any) => (
+                                                    <p key={item.id} className="text-xs font-bold text-gray-900 leading-tight">
+                                                        <span className="text-[#4A5D23]">{item.cantidad}x</span> {item.nombre}
+                                                    </p>
+                                                ))}
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="lg:col-span-2 flex justify-end">
-                                        <button
-                                            onClick={() => toggleStatus(order.id)}
-                                            className={`w-full lg:w-fit px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95
-                                            ${isDone
-                                                    ? 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                                                    : 'bg-[#4A5D23] text-white hover:bg-[#3a491c] shadow-[0_10px_20px_-5px_rgba(74,93,35,0.3)] hover:shadow-[0_15px_25px_-5px_rgba(74,93,35,0.4)]'
-                                                }`}
-                                        >
-                                            {isDone ? 'Revertir' : 'Entregado'}
-                                        </button>
+                                    <div className="lg:col-span-2 flex flex-col gap-2 justify-end">
+                                        {order.estado === 'pagado' && (
+                                            <button
+                                                onClick={() => changeStatus(order.id, 'preparando')}
+                                                className="w-full lg:w-fit px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-orange-500 text-white shadow-md hover:bg-orange-600"
+                                            >
+                                                Prepping
+                                            </button>
+                                        )}
+                                        {(order.estado === 'pagado' || order.estado === 'preparando') && (
+                                            <button
+                                                onClick={() => changeStatus(order.id, 'entregado')}
+                                                className="w-full lg:w-fit px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-[#4A5D23] text-white shadow-md hover:bg-[#3a491c]"
+                                            >
+                                                Deliver
+                                            </button>
+                                        )}
+                                        {order.estado === 'entregado' && (
+                                            <button
+                                                onClick={() => changeStatus(order.id, 'preparando')}
+                                                className="w-full lg:w-fit px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-gray-200 text-gray-600 hover:bg-gray-300"
+                                            >
+                                                Undo
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -334,7 +354,7 @@ export default function KitchenDashboard() {
                             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                             </div>
-                            <h3 className="text-lg font-black text-gray-800">Cero Pedidos</h3>
+                            <h3 className="text-lg font-black text-gray-800">No Orders</h3>
                             <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">No hay actividad para mostrar en este momento</p>
                         </div>
                     )}

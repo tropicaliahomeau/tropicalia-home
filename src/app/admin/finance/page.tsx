@@ -60,7 +60,7 @@ export default function AdminFinance() {
         <div className="space-y-6 animate-fade-in">
             <header className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Gestión de Gastos</h1>
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Expense Management</h1>
                     <p className="text-gray-500 font-medium">Consulta, edita y administra los egresos registrados</p>
                 </div>
                 <div className="bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm text-right">
