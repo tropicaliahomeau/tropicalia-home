@@ -1,0 +1,26 @@
+[
+  {
+    "id": "982d9078-f37f-4597-a9f0-62d8b5a5862a",
+    "semana_inicio": "2026-04-06",
+    "semana_fin": "2026-04-10",
+    "activo": true,
+    "created_at": "2026-03-28T00:14:58.931248+00:00",
+    "is_enabled": false
+  },
+  {
+    "id": "347554cd-7af3-46ed-8ab2-74014319c95b",
+    "semana_inicio": "2026-04-13",
+    "semana_fin": "2026-04-17",
+    "activo": false,
+    "created_at": "2026-03-28T00:14:58.931248+00:00",
+    "is_enabled": false
+  },
+  {
+    "id": "b4e41229-820b-48c0-9c13-1e0e78f1bd7f",
+    "semana_inicio": "2026-04-20",
+    "semana_fin": "2026-04-24",
+    "activo": false,
+    "created_at": "2026-03-28T00:14:58.931248+00:00",
+    "is_enabled": false
+  }
+]

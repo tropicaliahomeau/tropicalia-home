@@ -35,20 +35,25 @@ export default function MenuPage() {
         async function fetchData() {
             try {
                 // Fetch weekly_menus to know which week is active
-                const { data: weeksData, error: weeksError } = await supabase
+                const { data: rawWeeks, error: weeksError } = await supabase
                     .from('weekly_menus')
                     .select('*')
-                    .order('start_date', { ascending: true });
+                    .order('semana_inicio', { ascending: true });
                 
-                if (!weeksError && weeksData) {
-                    setAllWeeks(weeksData);
-                    const activeWk = weeksData.find(w => w.is_enabled === true);
+                if (!weeksError && rawWeeks) {
+                    const mappedWeeks = rawWeeks.map((w, i) => ({
+                        ...w,
+                        staticWeekId: `week-${i + 1}`,
+                        title: `Week ${i + 1} (${new Date(w.semana_inicio).getUTCDate()}/${new Date(w.semana_inicio).getUTCMonth()+1})`
+                    }));
+                    setAllWeeks(mappedWeeks);
+                    const activeWk = mappedWeeks.find(w => w.is_enabled === true);
                     if (activeWk) {
-                        setActiveWeekId(activeWk.id);
-                        setSelectedWeek(activeWk.id); // set automatically
+                        setActiveWeekId(activeWk.staticWeekId);
+                        setSelectedWeek(activeWk.staticWeekId);
                     } else {
                         setActiveWeekId(null);
-                        setSelectedWeek(weeksData[0]?.id || null);
+                        setSelectedWeek(mappedWeeks[0]?.staticWeekId || null);
                     }
                 }
 
@@ -142,8 +147,8 @@ export default function MenuPage() {
                         {allWeeks.map(wk => (
                             <button
                                 key={wk.id}
-                                onClick={() => setSelectedWeek(wk.id)}
-                                className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${selectedWeek === wk.id ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                onClick={() => setSelectedWeek(wk.staticWeekId)}
+                                className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${selectedWeek === wk.staticWeekId ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                             >
                                 {wk.title}
                             </button>

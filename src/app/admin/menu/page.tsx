@@ -22,11 +22,12 @@ export default function AdminMenuPage() {
 
     const fetchWeeks = async () => {
         try {
-            const { data, error } = await supabase.from('weekly_menus').select('*');
+            const { data, error } = await supabase.from('weekly_menus').select('*').order('semana_inicio', { ascending: true });
             if (data && !error) {
-                setWeeksData(data);
-                const active = data.find(w => w.activo);
-                if (active) setSelectedWeekId(active.id);
+                const mappedData = data.map((w, i) => ({ ...w, staticWeekId: `week-${i + 1}` }));
+                setWeeksData(mappedData);
+                const active = mappedData.find(w => w.activo);
+                if (active) setSelectedWeekId(active.staticWeekId);
             }
         } catch (e) {
             console.error('Error fetching weeks', e);
@@ -62,26 +63,34 @@ export default function AdminMenuPage() {
     }, [activeTab]);
 
     const toggleWeekEnabled = async (weekId: string, enable: boolean) => {
+        const targetDbWeek = weeksData.find(w => w.staticWeekId === weekId);
+        if (!targetDbWeek) return;
+
         try {
             if (enable) {
-                // PRIMERO: deshabilitar TODAS las semanas
-                await supabase
+                // PRIMERO: deshabilitar TODAS las semanas usando los UUIDs
+                const { error: err1 } = await supabase
                     .from('weekly_menus')
                     .update({ is_enabled: false })
-                    .neq('id', weekId);
+                    .neq('id', targetDbWeek.id);
+                if (err1) throw err1;
                 
                 // SEGUNDO: habilitar la seleccionada
-                await supabase
+                const { error: err2 } = await supabase
                     .from('weekly_menus')
                     .update({ is_enabled: true })
-                    .eq('id', weekId);
+                    .eq('id', targetDbWeek.id);
+                if (err2) throw err2;
+
                 alert('✅ Week Enabled. Customers can now place orders.');
             } else {
                 // Solo deshabilitar esta
-                await supabase
+                const { error: err3 } = await supabase
                     .from('weekly_menus')
                     .update({ is_enabled: false })
-                    .eq('id', weekId);
+                    .eq('id', targetDbWeek.id);
+                if (err3) throw err3;
+
                 alert('🔒 Week disabled.');
             }
             // Refrescar estado local
@@ -177,7 +186,7 @@ export default function AdminMenuPage() {
                 <div className="flex flex-col gap-4 border-b border-gray-200 pb-4">
                     <div className="flex gap-4 overflow-x-auto">
                         {MENUS.map(week => {
-                            const dbWeek = weeksData.find(w => w.id === week.id);
+                            const dbWeek = weeksData.find(w => w.staticWeekId === week.id);
                             const isEnabled = dbWeek?.is_enabled === true;
                             
                             return (
