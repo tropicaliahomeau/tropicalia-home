@@ -67,10 +67,17 @@ export async function POST(request: Request) {
                 telefono: phone 
             }, { onConflict: 'email' }); // Adjust conflict key if necessary
 
+        // Generate short order number
+        const cleanName = customer.replace(/[^a-zA-Z]/g, '').padEnd(3, 'A').toUpperCase();
+        const prefix = cleanName.substring(0, 3);
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const shortOrderNumber = `${prefix}${randomNum}`;
+
         // 3. Save order to Supabase (tabla 'orders')
         const { data: orderData, error: orderError } = await supabaseAdmin
             .from('orders')
             .insert({
+                order_number: shortOrderNumber,
                 nombre_cliente: customer,
                 email_cliente: email || '',
                 telefono: phone || '',

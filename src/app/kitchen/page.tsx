@@ -235,45 +235,21 @@ export default function KitchenDashboard() {
                                             <span className="lg:hidden text-[10px] font-black text-gray-400 uppercase">ORDER DETAIL</span>
                                             <div className="flex flex-col gap-3 w-full text-right lg:text-left">
                                                 {(() => {
-                                                    const meals: any[] = [];
-                                                    const drinks: any[] = [];
-                                                    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-
+                                                    const allItems: any[] = [];
                                                     (order.order_items || []).forEach((item: any) => {
-                                                        const reqDay = weekMap[item.menu_item_id];
-                                                        const itemName = item.menu_items?.nombre || 'Unknown Item';
-                                                        if (reqDay) {
-                                                            meals.push({ day: reqDay, qty: item.cantidad || 1 });
-                                                        } else {
-                                                            drinks.push({ name: itemName, qty: item.cantidad || 1 });
-                                                        }
+                                                        const itemName = item.menu_items?.nombre || 'Item Desconocido';
+                                                        allItems.push({ name: itemName, qty: item.cantidad || 1 });
                                                     });
 
-                                                    meals.sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
-
                                                     return (
-                                                        <>
-                                                            {meals.length > 0 && (
-                                                                <div>
-                                                                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">🍽️ Meals</p>
-                                                                    {meals.map((m, idx) => (
-                                                                        <p key={'m'+idx} className="text-xs font-bold text-gray-900 leading-tight">
-                                                                            <span className="text-[#4A5D23] font-black uppercase">{m.day.substring(0,3)}</span> — {m.qty}x
-                                                                        </p>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                            {drinks.length > 0 && (
-                                                                <div>
-                                                                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1 mt-2">🥤 Drinks & Others</p>
-                                                                    {drinks.map((d, idx) => (
-                                                                        <p key={'d'+idx} className="text-xs font-bold text-gray-900 leading-tight">
-                                                                            <span className="text-blue-500 font-black">{d.qty}x</span> {d.name}
-                                                                        </p>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </>
+                                                        <div>
+                                                            <p className="text-[10px] text-gray-400 font-black uppercase mb-1">🛒 Items</p>
+                                                            {allItems.map((i, idx) => (
+                                                                <p key={'i'+idx} className="text-xs font-bold text-gray-900 leading-tight">
+                                                                    <span className="text-[#4A5D23] font-black">{i.qty}x</span> {i.name}
+                                                                </p>
+                                                            ))}
+                                                        </div>
                                                     );
                                                 })()}
                                             </div>

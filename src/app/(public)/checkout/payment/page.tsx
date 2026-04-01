@@ -22,8 +22,8 @@ export default function PaymentPage() {
 
     useEffect(() => {
         const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
                 alert("Please sign in to complete your order");
                 router.push("/login");
             } else {

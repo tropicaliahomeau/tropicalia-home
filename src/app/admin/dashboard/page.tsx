@@ -217,9 +217,9 @@ export default function DashboardPage() {
                                     <div className="flex items-center gap-4 flex-1">
                                         <div className={`w-1.5 h-10 rounded-full ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-400' : (order.status === 'Pending Validation' ? 'bg-blue-400' : 'bg-orange-400')}`}></div>
                                         <div>
-                                            <p className="font-bold text-gray-900 leading-tight">{order.customer}</p>
-                                            <p className="text-[10px] font-bold text-[#4A5D23]">{order.phone || 'Sin teléfono'}</p>
-                                            <p className="text-[9px] font-bold text-gray-400 mt-0.5 uppercase tracking-tighter">#{order.id} • {order.meal}</p>
+                                            <p className="font-bold text-gray-900 leading-tight">{order.nombre_cliente || order.customer}</p>
+                                            <p className="text-[10px] font-bold text-[#4A5D23]">{order.telefono || order.phone || 'Sin teléfono'}</p>
+                                            <p className="text-[9px] font-bold text-gray-400 mt-0.5 uppercase tracking-tighter">#{order.order_number || order.id} • {order.meal || 'Resumen de Orden'}</p>
                                         </div>
                                     </div>
 
@@ -252,9 +252,9 @@ export default function DashboardPage() {
                                     <div className="flex flex-col items-end gap-1">
                                         <p className="font-black text-gray-900">${order.total}</p>
                                         <p className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full 
-                                            ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-100 text-green-600' :
-                                                order.status === 'Pending Validation' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
-                                            {order.status === 'Pending Validation' ? 'Por Validar' : (order.status === 'Confirmed' ? 'Confirmado' : order.status)}
+                                            ${order.estado === 'entregado' || order.status === 'Delivered' ? 'bg-green-100 text-green-600' :
+                                                order.estado === 'pendiente' || order.status === 'Pending Validation' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                                            {order.estado === 'pagado' ? 'Pagado' : (order.estado || order.status || 'Pendiente')}
                                         </p>
                                         {order.payIdProof && (
                                             <button
