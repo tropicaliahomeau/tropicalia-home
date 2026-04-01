@@ -285,7 +285,7 @@ export default function AdminMenuPage() {
                         title: dbMeal?.nombre || meal.title,
                         description: dbMeal?.descripcion || meal.description,
                         image: dbMeal?.imagen_url || meal.image,
-                        price: dbMeal?.precio || meal.price || 18.00,
+                        price: dbMeal?.precio || (meal as any).price || 18.00,
                         tags: dbMeal?.tags || meal.tags || []
                     };
                     
