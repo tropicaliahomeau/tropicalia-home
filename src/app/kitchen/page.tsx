@@ -48,7 +48,7 @@ export default function KitchenDashboard() {
                 const { data: ordersData, error } = await supabase
                     .from('orders')
                     .select('*, order_items(*, menu_items(nombre))')
-                    .not('estado', 'in', '("picked_up","cancelled")')
+                    .in('estado', ['pagado', 'preparando'])
                     .order('created_at', { ascending: false });
 
                 if (error) {

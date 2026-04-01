@@ -2,6 +2,7 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
+import { supabase } from '@/lib/supabaseClient';
 
 const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
 const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
@@ -42,21 +43,25 @@ export default function DashboardPage() {
     const [financialComparison, setFinancialComparison] = React.useState<any[]>([]);
 
     React.useEffect(() => {
-        try {
-            const usersJson = localStorage.getItem("tropicalia_all_users") || "[]";
-            const users = JSON.parse(usersJson);
-            const ordersJson = localStorage.getItem("tropicalia_orders") || "[]";
-            const orders = JSON.parse(ordersJson);
-            const expensesJson = localStorage.getItem("tropicalia_expenses") || "[]";
-            const expenses = JSON.parse(expensesJson);
+        const loadDashboardData = async () => {
+            try {
+                const usersJson = localStorage.getItem("tropicalia_all_users") || "[]";
+                const users = JSON.parse(usersJson);
+                
+                // Fetch orders from Supabase
+                const { data: dbOrders, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+                const orders = dbOrders || [];
 
-            const customers = users.filter((u: any) => u.role === 'CUSTOMER');
-            const allergicList = customers.filter((u: any) => u.allergies && u.allergies !== "Ninguna" && u.allergies !== "N/A");
+                const expensesJson = localStorage.getItem("tropicalia_expenses") || "[]";
+                const expenses = JSON.parse(expensesJson);
 
-            const revenue = orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0);
-            const lunchRev = orders.reduce((sum: number, o: any) => sum + (o.lunchTotal || 0), 0);
-            const extraRev = orders.reduce((sum: number, o: any) => sum + (o.extrasTotal || 0), 0);
-            const totalExp = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+                const customers = users.filter((u: any) => u.role === 'CUSTOMER');
+                const allergicList = customers.filter((u: any) => u.allergies && u.allergies !== "Ninguna" && u.allergies !== "N/A");
+
+                const revenue = orders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
+                const lunchRev = orders.reduce((sum: number, o: any) => sum + (Number(o.lunchTotal || o.total) || 0), 0);
+                const extraRev = orders.reduce((sum: number, o: any) => sum + (Number(o.extrasTotal) || 0), 0);
+                const totalExp = expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
             const delivered = orders.filter((o: any) => o.status === 'entregado' || o.status === 'Delivered').length;
             const pending = orders.filter((o: any) => ['pendiente', 'Pending', 'preparando', 'Preparing', 'Ready'].includes(o.status)).length;
@@ -81,9 +86,12 @@ export default function DashboardPage() {
             ]);
 
             setRecentOrders(orders.slice(-10).reverse());
+            setRecentOrders(orders.slice(-10).reverse());
         } catch (e) {
             console.error("Dashboard Sync Error:", e);
         }
+    };
+    loadDashboardData();
     }, [activeTab]);
 
     const downloadInactiveReport = () => {

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CreditCard, PaymentForm } from 'react-square-web-payments-sdk';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function PaymentPage() {
     const {
@@ -17,6 +18,20 @@ export default function PaymentPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [orderNumber, setOrderNumber] = useState<string | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert("Please sign in to complete your order");
+                router.push("/login");
+            } else {
+                setIsAuthenticated(true);
+            }
+        };
+        checkAuth();
+    }, [router]);
 
     const [customerData, setCustomerData] = useState({
         name: '',
@@ -137,6 +152,8 @@ export default function PaymentPage() {
             </div>
         );
     }
+
+    if (isAuthenticated === null) return <div className="py-20 text-center">Loading...</div>;
 
     return (
         <div className="container mx-auto px-4 py-12 max-w-5xl">

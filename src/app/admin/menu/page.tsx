@@ -16,9 +16,11 @@ export default function AdminMenuPage() {
     
     // Auth & Edit state
     const currentMenu = MENUS.find(m => m.id === selectedWeekId) || MENUS[0];
-    const [editingItem, setEditingItem] = useState<number | null>(null);
+    const [editingItem, setEditingItem] = useState<number | string | null>(null);
     const [editingExtra, setEditingExtra] = useState<any>(null);
     const [isAddingExtra, setIsAddingExtra] = useState(false);
+    const [dbMealsMap, setDbMealsMap] = useState<Record<string, any>>({});
+    const [savingMealId, setSavingMealId] = useState<string | number | null>(null);
 
     const fetchWeeks = async () => {
         try {
@@ -28,6 +30,21 @@ export default function AdminMenuPage() {
                 setWeeksData(mappedData);
                 const active = mappedData.find(w => w.activo);
                 if (active) setSelectedWeekId(active.staticWeekId);
+                
+                // Fetch weekly_menu_items to map Supabase overrides
+                const { data: wmiData } = await supabase
+                    .from('weekly_menu_items')
+                    .select('day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
+                
+                if (wmiData) {
+                    const mappedPlates: Record<string, any> = {};
+                    wmiData.forEach((wmi: any) => {
+                         if (wmi.menu_items) {
+                             mappedPlates[wmi.menu_items.nombre] = wmi.menu_items; // Map by name for easy matching if UUIDs mismatch before SQL is run
+                         }
+                    });
+                    setDbMealsMap(mappedPlates);
+                }
             }
         } catch (e) {
             console.error('Error fetching weeks', e);
@@ -101,11 +118,52 @@ export default function AdminMenuPage() {
         }
     };
 
-    const handleSave = (id: number) => {
-        // Here we would call the API to update the item
-        console.log(`Saving item ${id}...`);
-        setEditingItem(null);
-        alert("Cambios guardados (Simulación)");
+    const handleSave = async (originalMeal: any, formEl: HTMLFormElement) => {
+        const formData = new FormData(formEl);
+        
+        const title = formData.get('title') as string;
+        const description = formData.get('description') as string;
+        const image = formData.get('image') as string;
+        const price = parseFloat((formData.get('price') as string) || "18.00");
+        const tags = (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean);
+
+        const dbMeal = dbMealsMap[originalMeal.title] || dbMealsMap[title]; // try to find existing DB record
+
+        try {
+            setSavingMealId(originalMeal.id);
+            if (dbMeal && dbMeal.id) {
+                const { error } = await supabase.from('menu_items').update({
+                    nombre: title,
+                    descripcion: description,
+                    imagen_url: image,
+                    precio: price,
+                    tags: tags
+                }).eq('id', dbMeal.id);
+                if (error) throw error;
+            } else {
+                const insertData = {
+                    nombre: title,
+                    descripcion: description,
+                    imagen_url: image,
+                    precio: price,
+                    tags: tags,
+                    categoria: 'principal',
+                    disponible: true
+                };
+                const { error } = await supabase.from('menu_items').insert([insertData]);
+                if (error) throw error;
+            }
+            
+            console.log(`Saved item ${title} to Supabase...`);
+            setEditingItem(null);
+            alert("Changes saved successfully");
+            fetchWeeks();
+        } catch (error: any) {
+             console.error("Error saving:", error);
+             alert("Error protecting the record: " + error.message);
+        } finally {
+             setSavingMealId(null);
+        }
     };
 
     // Extras CRUD handlers
@@ -183,38 +241,33 @@ export default function AdminMenuPage() {
             {loading ? (
                 <div className="py-4 text-gray-500">Loading weeks...</div>
             ) : (
-                <div className="flex flex-col gap-4 border-b border-gray-200 pb-4">
-                    <div className="flex gap-4 overflow-x-auto">
+                <div className="flex flex-col gap-4 border-b border-gray-200 pb-8 mb-6 mt-4">
+                    <h3 className="font-bold text-gray-700 text-lg mb-2">Active Week Selection</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {MENUS.map(week => {
                             const dbWeek = weeksData.find(w => w.staticWeekId === week.id);
                             const isEnabled = dbWeek?.is_enabled === true;
                             
                             return (
-                                <div key={week.id} className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${isEnabled ? 'border-green-500 bg-green-50/30' : 'border-gray-200 bg-gray-50 opacity-80'}`}>
-                                    <button
-                                        onClick={() => setSelectedWeekId(week.id)}
-                                        className={`px-6 py-3 rounded-lg font-bold transition-all w-full ${selectedWeekId === week.id
-                                            ? 'bg-gray-800 text-white shadow-md'
-                                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                                            }`}
-                                    >
-                                        {week.name} {isEnabled && '🔓'} {!isEnabled && '🔒'}
-                                    </button>
-                                    
-                                    <div className="flex gap-2 w-full mt-2">
-                                        <button 
-                                            onClick={() => toggleWeekEnabled(week.id, true)}
-                                            className={`flex-1 text-xs font-black px-3 py-2 rounded-lg uppercase tracking-widest transition-all ${isEnabled ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 ring-2 ring-green-300 ring-offset-1' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                                        >
-                                            ON
-                                        </button>
-                                        <button 
-                                            onClick={() => toggleWeekEnabled(week.id, false)}
-                                            className={`flex-1 text-xs font-black px-3 py-2 rounded-lg uppercase tracking-widest transition-all ${!isEnabled ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 ring-2 ring-red-300 ring-offset-1' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                                        >
-                                            OFF
-                                        </button>
-                                    </div>
+                                <div 
+                                    key={week.id} 
+                                    onClick={() => {
+                                        setSelectedWeekId(week.id);
+                                        if (!isEnabled) toggleWeekEnabled(week.id, true);
+                                    }}
+                                    className={`relative flex flex-col justify-center items-center p-6 rounded-2xl border-2 cursor-pointer transition-all shadow-sm hover:shadow-md ${isEnabled ? 'border-[#4A5D23] bg-[#4A5D23] text-white scale-[1.02]' : 'border-gray-200 bg-gray-50 text-gray-800 hover:border-gray-300'}`}
+                                >
+                                    {isEnabled && (
+                                        <div className="absolute top-4 right-4 bg-white text-[#4A5D23] rounded-full p-1 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                    <h4 className="text-xl font-black mb-1">{week.name}</h4>
+                                    <p className={`text-sm font-medium ${isEnabled ? 'text-green-100' : 'text-gray-500'}`}>
+                                        {isEnabled ? 'Active - Customers can order' : 'Locked - View only'}
+                                    </p>
                                 </div>
                             );
                         })}
@@ -224,62 +277,90 @@ export default function AdminMenuPage() {
 
             {/* Menu Grid */}
             <div className="grid grid-cols-1 gap-6">
-                {currentMenu.meals.map((meal) => (
-                    <div key={meal.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex gap-6">
+                {currentMenu.meals.map((meal) => {
+                    // Merge Supabase data if available, falling back to local
+                    const dbMeal = dbMealsMap[meal.title] || dbMealsMap[meal.id]; 
+                    const mergedMeal = {
+                        ...meal,
+                        title: dbMeal?.nombre || meal.title,
+                        description: dbMeal?.descripcion || meal.description,
+                        image: dbMeal?.imagen_url || meal.image,
+                        price: dbMeal?.precio || meal.price || 18.00,
+                        tags: dbMeal?.tags || meal.tags || []
+                    };
+                    
+                    return (
+                    <div key={mergedMeal.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex gap-6">
 
                         {/* Image Preview & Edit */}
                         <div className="w-48 h-32 relative shrink-0 bg-gray-100 rounded-xl overflow-hidden group">
                             <Image
-                                src={meal.image}
-                                alt={meal.title}
+                                src={mergedMeal.image}
+                                alt={mergedMeal.title}
                                 fill
                                 className="object-cover group-hover:opacity-75 transition-opacity"
                             />
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="bg-white/90 text-gray-800 px-3 py-1 rounded-full text-sm font-bold shadow-sm">
-                                    Cambiar Foto
-                                </button>
-                            </div>
                         </div>
 
                         {/* Details */}
                         <div className="flex-1 space-y-3">
                             <div className="flex justify-between items-start">
                                 <span className="text-xs font-bold text-[#4A5D23] bg-[#4A5D23]/10 px-2 py-0.5 rounded uppercase tracking-wide">
-                                    {meal.day}
+                                    {mergedMeal.day}
                                 </span>
                                 <button
                                     className="text-gray-400 hover:text-[#4A5D23]"
-                                    onClick={() => setEditingItem(meal.id === editingItem ? null : meal.id)}
+                                    onClick={() => setEditingItem(mergedMeal.id === editingItem ? null : mergedMeal.id)}
                                 >
-                                    {editingItem === meal.id ? 'Cancelar' : 'Editar'}
+                                    {editingItem === mergedMeal.id ? 'Cancel' : 'Edit'}
                                 </button>
                             </div>
 
-                            {editingItem === meal.id ? (
-                                <div className="space-y-3">
+                            {editingItem === mergedMeal.id ? (
+                                <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); handleSave(meal, e.currentTarget); }}>
                                     <input
                                         type="text"
-                                        defaultValue={meal.title}
+                                        name="title"
+                                        defaultValue={mergedMeal.title}
+                                        placeholder="Meal Name"
                                         className="w-full text-lg font-bold border-b border-gray-300 focus:border-[#4A5D23] outline-none py-1"
+                                        required
                                     />
                                     <textarea
-                                        defaultValue={meal.description}
+                                        name="description"
+                                        defaultValue={mergedMeal.description}
+                                        placeholder="Description..."
                                         className="w-full text-sm text-gray-600 border border-gray-200 rounded-lg p-2 focus:border-[#4A5D23] outline-none h-20"
                                     />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1 block">Image URL</label>
+                                            <input name="image" type="url" defaultValue={mergedMeal.image} className="w-full text-sm border-b border-gray-300 py-1 outline-none focus:border-[#4A5D23]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1 block">Price</label>
+                                            <input name="price" type="number" step="0.01" defaultValue={mergedMeal.price} className="w-full text-sm border-b border-gray-300 py-1 outline-none focus:border-[#4A5D23]" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1 block">Tags (comma separated)</label>
+                                        <input name="tags" type="text" defaultValue={(mergedMeal.tags || []).join(', ')} className="w-full text-sm border-b border-gray-300 py-1 outline-none focus:border-[#4A5D23]" />
+                                    </div>
                                     <button
-                                        onClick={() => handleSave(meal.id)}
-                                        className="bg-[#4A5D23] text-white px-4 py-1.5 rounded-lg text-sm font-bold"
+                                        type="submit"
+                                        disabled={savingMealId === mergedMeal.id}
+                                        className={`px-4 py-1.5 rounded-lg text-sm font-bold text-white transition-opacity ${savingMealId === mergedMeal.id ? 'bg-gray-400 cursor-wait' : 'bg-[#4A5D23]'}`}
                                     >
-                                        Guardar Cambios
+                                        {savingMealId === mergedMeal.id ? 'Saving...' : 'Save Changes'}
                                     </button>
-                                </div>
+                                </form>
                             ) : (
                                 <>
-                                    <h3 className="text-xl font-bold text-gray-800">{meal.title}</h3>
-                                    <p className="text-gray-500 text-sm leading-relaxed">{meal.description}</p>
+                                    <h3 className="text-xl font-bold text-gray-800">{mergedMeal.title}</h3>
+                                    <p className="text-gray-500 text-sm leading-relaxed">{mergedMeal.description}</p>
+                                    <div className="text-[#4A5D23] font-bold text-sm">${Number(mergedMeal.price).toFixed(2)}</div>
                                     <div className="flex gap-2">
-                                        {meal.tags.map(tag => (
+                                        {(mergedMeal.tags || []).map((tag: string) => (
                                             <span key={tag} className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">
                                                 {tag}
                                             </span>
@@ -289,7 +370,8 @@ export default function AdminMenuPage() {
                             )}
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
                 </>
             ) : (
