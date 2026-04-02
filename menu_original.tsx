@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './menu.module.css';
 import { MENUS } from '@/data/menus';
-import { supabase } from '@/lib/supabaseClient';
 
 export default function MenuPage() {
     const {
@@ -20,43 +19,11 @@ export default function MenuPage() {
     const router = useRouter();
     const [selectedWeekId, setSelectedWeekId] = useState<string>(MENUS[0].id);
     const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'drinks'>('daily');
-    const [enabledWeeks, setEnabledWeeks] = useState<string[]>([]);
-    const [dbMealsMap, setDbMealsMap] = useState<Record<string, any>>({});
-
-    useEffect(() => {
-        const fetchStatus = async () => {
-            const { data } = await supabase.from('weekly_menus').select('is_enabled').order('semana_inicio', { ascending: true });
-            if (data) {
-                const enabled = data.map((w, index) => w.is_enabled ? `week-${index + 1}` : null).filter(Boolean) as string[];
-                setEnabledWeeks(enabled);
-                
-                // Optional: set initial week to the first enabled one
-                const autoActive = enabled.find(w => MENUS.some(m => m.id === w));
-                if (autoActive) setSelectedWeekId(autoActive);
-            }
-
-            // Fetch weekly_menu_items to map Supabase overrides
-            const { data: wmiData } = await supabase
-                .from('weekly_menu_items')
-                .select('day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
-            
-            if (wmiData) {
-                const mappedPlates: Record<string, any> = {};
-                wmiData.forEach((wmi: any) => {
-                     if (wmi.menu_items) {
-                         mappedPlates[wmi.menu_items.nombre] = wmi.menu_items; // Map by name for easy matching
-                     }
-                });
-                setDbMealsMap(mappedPlates);
-            }
-        };
-        fetchStatus();
-    }, []);
 
     const currentMenu = MENUS.find(m => m.id === selectedWeekId) || MENUS[0];
 
-    // Logic to lock future weeks
-    const isOrderingEnabled = enabledWeeks.includes(currentMenu.id);
+    // Logic to lock future weeks (Only Week 1 is 'active' for purchase in this demo)
+    const isOrderingEnabled = currentMenu.id === 'week-1';
 
     // pricing calculation integrated with UserContext cart
     const calculateTotal = () => {
@@ -76,7 +43,7 @@ export default function MenuPage() {
 
     const toggleMeal = (meal: any) => {
         if (!isOrderingEnabled) return;
-        if (cart.meals.some((m: any) => m.id === meal.id || typeof m === 'number' && m === meal.id)) {
+        if (cart.meals.includes(meal.id)) {
             removeFromCart('meal', meal.id);
         } else {
             addToCart('meal', meal);
@@ -85,21 +52,9 @@ export default function MenuPage() {
 
     const selectFullWeek = () => {
         if (!isOrderingEnabled) return;
-        currentMenu.meals.forEach(meal => {
-            const dbMeal = dbMealsMap[meal.title] || dbMealsMap[meal.id];
-            const mergedMealId = dbMeal?.id || meal.id;
-            const mergedTitle = dbMeal?.nombre || meal.title;
-            const mergedImage = dbMeal?.imagen_url || meal.image;
-            const mergedPrice = dbMeal?.precio || meal.price || 18.00;
-
-            if (!cart.meals.some((cm: any) => cm.id === mergedMealId || typeof cm === 'number' && cm === mergedMealId)) {
-                addToCart('meal', {
-                    ...meal,
-                    id: mergedMealId,
-                    title: mergedTitle,
-                    image: mergedImage,
-                    price: mergedPrice
-                });
+        currentMenu.meals.forEach(m => {
+            if (!cart.meals.includes(m.id)) {
+                addToCart('meal', m);
             }
         });
     };
@@ -114,11 +69,11 @@ export default function MenuPage() {
     ];
 
     const handleNext = () => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
         router.push('/checkout/review');
-    };
-
-    const isMealSelected = (id: any) => {
-        return cart.meals.some((m: any) => m.id === id || typeof m === 'number' && m === id);
     };
 
     return (
@@ -150,94 +105,86 @@ export default function MenuPage() {
 
                 <div className="mb-8 flex flex-col items-center gap-3">
                     {!isOrderingEnabled && (
-                        <div className="bg-yellow-100 text-yellow-800 px-6 py-2 rounded-full font-medium border border-yellow-200 mb-4 text-sm mt-2">
-                            🔒 This week is not available for ordering yet
+                        <div className="bg-gray-100 text-gray-500 px-6 py-2 rounded-full font-medium border border-gray-200 mb-4">
+                            🔒 Esta semana solo está disponible para visualización
                         </div>
                     )}
 
                     {/* Desktop View Mode Toggle (Por Días / Semana / Bebidas) */}
-                    <div className="bg-white rounded-full p-2 border border-gray-200 shadow-sm flex items-center justify-center space-x-2">
-                        <button
-                            onClick={() => setViewMode('daily')}
-                            className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'daily'
-                                ? 'bg-white shadow-md text-[#4A5D23]'
-                                : 'text-gray-500 hover:text-gray-800'
-                                }`}
-                        >
-                            By Day
-                        </button>
-                        <button
-                            onClick={() => {
-                                setViewMode('weekly');
-                                selectFullWeek();
-                            }}
-                            className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'weekly'
-                                ? 'bg-white shadow-md text-[#4A5D23]'
-                                : 'text-gray-500 hover:text-gray-800'
-                                }`}
-                        >
-                            Full Week
-                        </button>
-                        <button
-                            onClick={() => setViewMode('drinks')}
-                            className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'drinks'
-                                ? 'bg-white shadow-md text-[#4A5D23]'
-                                : 'text-gray-500 hover:text-gray-800'
-                                }`}
-                        >
-                            Drinks (Others)
-                        </button>
-                    </div>
                     {isOrderingEnabled && (
-                        <p className="text-gray-400 text-sm mt-2 text-center">
-                            {viewMode === 'daily' && 'Selecciona los días individualmente haciendo clic en cada tarjeta.'}
-                            {viewMode === 'weekly' && '¡Excelente elección! Has seleccionado la semana completa con descuento.'}
-                            {viewMode === 'drinks' && 'Acompaña tu almuerzo con algo extra y delicioso.'}
-                        </p>
+                        <>
+                            <div className="bg-white rounded-full p-2 border border-gray-200 shadow-sm flex items-center justify-center space-x-2">
+                                <button
+                                    onClick={() => setViewMode('daily')}
+                                    className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'daily'
+                                        ? 'bg-white shadow-md text-[#4A5D23]'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                >
+                                    Por Días
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setViewMode('weekly');
+                                        selectFullWeek();
+                                    }}
+                                    className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'weekly'
+                                        ? 'bg-white shadow-md text-[#4A5D23]'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                >
+                                    Semana Completa
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('drinks')}
+                                    className={`px-8 py-3 rounded-full font-bold text-sm transition-all focus:outline-none ${viewMode === 'drinks'
+                                        ? 'bg-white shadow-md text-[#4A5D23]'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                        }`}
+                                >
+                                    Bebidas (Otros)
+                                </button>
+                            </div>
+                            <p className="text-gray-400 text-sm mt-2 text-center">
+                                {viewMode === 'daily' && 'Selecciona los días individualmente haciendo clic en cada tarjeta.'}
+                                {viewMode === 'weekly' && '¡Excelente elección! Has seleccionado la semana completa con descuento.'}
+                                {viewMode === 'drinks' && 'Acompaña tu almuerzo con algo extra y delicioso.'}
+                            </p>
+                        </>
                     )}
                 </div>
 
                 {/* Main Content Layout - Grid with Sidebar */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
                     <div className="lg:col-span-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
                             {viewMode !== 'drinks' ? (
-                                currentMenu.meals.map((meal) => {
-                                    const dbMeal = dbMealsMap[meal.title] || dbMealsMap[meal.id];
-                                    const mergedMeal = {
-                                        ...meal,
-                                        id: dbMeal?.id || meal.id,
-                                        title: dbMeal?.nombre || meal.title,
-                                        description: dbMeal?.descripcion || meal.description,
-                                        image: dbMeal?.imagen_url || meal.image,
-                                        price: dbMeal?.precio || meal.price || 18.00,
-                                        tags: dbMeal?.tags || meal.tags || []
-                                    };
-
-                                    return (
+                                currentMenu.meals.map((meal) => (
                                     <div
-                                        key={mergedMeal.id}
-                                        onClick={() => toggleMeal(mergedMeal)}
+                                        key={meal.id}
+                                        onClick={() => toggleMeal(meal)}
                                         className={`
                                                 relative bg-white rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer group
-                                                ${isMealSelected(mergedMeal.id) ? 'border-[#4A5D23] ring-2 ring-[#4A5D23]/10 shadow-xl transform scale-[1.02]' : 'border-gray-100 hover:border-gray-200 hover:shadow-lg'}
+                                                ${cart.meals.includes(meal.id) ? 'border-[#4A5D23] ring-2 ring-[#4A5D23]/10 shadow-xl transform scale-[1.02]' : 'border-gray-100 hover:border-gray-200 hover:shadow-lg'}
+                                                ${!isOrderingEnabled ? 'opacity-70 grayscale-[0.5] cursor-not-allowed pointer-events-none' : ''}
                                             `}
                                     >
                                         {/* Day Label */}
                                         <div className="bg-[#4A5D23] text-white text-center py-1.5 text-xs font-black tracking-widest uppercase">
-                                            {mergedMeal.day}
+                                            {meal.day}
                                         </div>
 
                                         {/* Image */}
                                         <div className="relative h-48 w-full bg-gray-100">
                                             <Image
-                                                src={mergedMeal.image}
-                                                alt={mergedMeal.title}
+                                                src={meal.image}
+                                                alt={meal.title}
                                                 fill
                                                 className="object-cover transition-transform duration-700 group-hover:scale-110"
                                                 sizes="(max-width: 768px) 100vw, 33vw"
                                             />
-                                            {isMealSelected(mergedMeal.id) && (
+                                            {cart.meals.includes(meal.id) && (
                                                 <div className="absolute inset-0 bg-[#4A5D23]/30 flex items-center justify-center backdrop-blur-[2px] animate-fade-in">
                                                     <div className="bg-white text-[#4A5D23] rounded-full p-3 shadow-2xl transform scale-110">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -250,31 +197,28 @@ export default function MenuPage() {
 
                                         {/* Content */}
                                         <div className="p-5 flex flex-col h-full">
-                                            <h3 className="font-black text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#4A5D23] transition-colors">{mergedMeal.title}</h3>
-                                            <p className="text-sm text-gray-500 mb-4 line-clamp-2">{mergedMeal.description}</p>
+                                            <h3 className="font-black text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#4A5D23] transition-colors">{meal.title}</h3>
+                                            <p className="text-sm text-gray-500 mb-4 line-clamp-2">{meal.description}</p>
 
                                             {isOrderingEnabled ? (
                                                 <button
                                                     className={`w-full py-3 rounded-xl text-sm font-black transition-all mt-auto border-2
-                                                            ${isMealSelected(mergedMeal.id)
+                                                            ${cart.meals.includes(meal.id)
                                                             ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
                                                             : 'bg-white border-gray-100 text-gray-700 hover:border-[#4A5D23] hover:text-[#4A5D23]'}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        toggleMeal(mergedMeal);
+                                                        toggleMeal(meal);
                                                     }}
                                                 >
-                                                    {isMealSelected(mergedMeal.id) ? 'QUITAR DÍA' : 'SELECCIONAR'}
+                                                    {cart.meals.includes(meal.id) ? 'QUITAR DÍA' : 'SELECCIONAR'}
                                                 </button>
                                             ) : (
-                                                <button disabled className="mt-auto w-full py-3 rounded-xl text-sm font-black transition-all border-2 bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed">
-                                                    Not Available
-                                                </button>
+                                                <div className="mt-auto pt-2 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Agotado</div>
                                             )}
                                         </div>
                                     </div>
-                                    );
-                                })
+                                ))
                             ) : (
                                 /* DRINKS SECTION (Visible only when viewMode === 'drinks') */
                                 availableExtras.map((extra) => {
@@ -292,7 +236,7 @@ export default function MenuPage() {
                                                 <button
                                                     className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${quantity > 0 ? 'bg-white text-gray-600 shadow-sm hover:text-red-500' : 'text-gray-300 cursor-not-allowed'}`}
                                                     onClick={() => updateCartExtraQuantity(extra.id, -1)}
-                                                    disabled={quantity === 0 || !isOrderingEnabled}
+                                                    disabled={quantity === 0}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
@@ -300,16 +244,14 @@ export default function MenuPage() {
                                                 </button>
                                                 <span className="font-black w-4 text-center text-gray-800">{quantity}</span>
                                                 <button
-                                                    className={`w-8 h-8 flex items-center justify-center rounded-full text-white shadow-sm transition-colors ${isOrderingEnabled ? 'bg-[#4A5D23] hover:bg-[#3a491c]' : 'bg-gray-300 cursor-not-allowed'}`}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-[#4A5D23] text-white shadow-sm hover:bg-[#3a491c] transition-colors"
                                                     onClick={() => {
-                                                        if (!isOrderingEnabled) return;
                                                         if (quantity === 0) {
                                                             addToCart('extra', { ...extra, quantity: 1 });
                                                         } else {
                                                             updateCartExtraQuantity(extra.id, 1);
                                                         }
                                                     }}
-                                                    disabled={!isOrderingEnabled}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
@@ -345,6 +287,7 @@ export default function MenuPage() {
                                             {isFullWeek ? '$85.00' : `$${(cart.meals.length * 18).toFixed(2)}`}
                                         </span>
                                     </div>
+
                                 </div>
 
                                 {isFullWeek && (

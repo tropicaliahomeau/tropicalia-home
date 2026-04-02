@@ -1,5 +1,5 @@
 export interface Meal {
-    id: number;
+    id: number | string;
     day: string;
     title: string;
     description: string;
@@ -7,6 +7,7 @@ export interface Meal {
     image: string;
     sides?: string[];
     dessert?: string;
+    price?: number;
 }
 
 export interface WeeklyMenu {

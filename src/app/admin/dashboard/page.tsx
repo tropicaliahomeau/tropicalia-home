@@ -63,8 +63,8 @@ export default function DashboardPage() {
                 const extraRev = orders.reduce((sum: number, o: any) => sum + (Number(o.extrasTotal) || 0), 0);
                 const totalExp = expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
-            const delivered = orders.filter((o: any) => o.status === 'entregado' || o.status === 'Delivered').length;
-            const pending = orders.filter((o: any) => ['pendiente', 'Pending', 'preparando', 'Preparing', 'Ready'].includes(o.status)).length;
+            const delivered = orders.filter((o: any) => o.estado === 'entregado' || o.estado === 'Delivered').length;
+            const pending = orders.filter((o: any) => ['pendiente', 'Pending', 'preparando', 'Preparing', 'Ready'].includes(o.estado)).length;
 
             setRealKpis({
                 totalOrders: orders.length,
@@ -215,7 +215,7 @@ export default function DashboardPage() {
                             {recentOrders.map((order) => (
                                 <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100 group">
                                     <div className="flex items-center gap-4 flex-1">
-                                        <div className={`w-1.5 h-10 rounded-full ${order.status === 'entregado' || order.status === 'Delivered' ? 'bg-green-400' : (order.status === 'Pending Validation' ? 'bg-blue-400' : 'bg-orange-400')}`}></div>
+                                        <div className={`w-1.5 h-10 rounded-full ${order.estado === 'entregado' || order.estado === 'Delivered' ? 'bg-green-400' : (order.estado === 'Pending Validation' ? 'bg-blue-400' : 'bg-orange-400')}`}></div>
                                         <div>
                                             <p className="font-bold text-gray-900 leading-tight">{order.nombre_cliente || order.customer}</p>
                                             <p className="text-[10px] font-bold text-[#4A5D23]">{order.telefono || order.phone || 'Sin teléfono'}</p>
@@ -236,10 +236,10 @@ export default function DashboardPage() {
                                                 </svg>
                                             </button>
                                         )}
-                                        {order.status === 'Pending Validation' && (
+                                        {order.estado === 'Pending Validation' && (
                                             <button
                                                 onClick={() => {
-                                                    const updatedOrders = recentOrders.map(o => o.id === order.id ? { ...o, status: 'Confirmed' } : o);
+                                                    const updatedOrders = recentOrders.map(o => o.id === order.id ? { ...o, estado: 'Confirmed' } : o);
                                                     localStorage.setItem('tropicalia_orders', JSON.stringify(updatedOrders));
                                                     window.location.reload();
                                                 }}
@@ -252,9 +252,9 @@ export default function DashboardPage() {
                                     <div className="flex flex-col items-end gap-1">
                                         <p className="font-black text-gray-900">${order.total}</p>
                                         <p className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full 
-                                            ${order.estado === 'entregado' || order.status === 'Delivered' ? 'bg-green-100 text-green-600' :
-                                                order.estado === 'pendiente' || order.status === 'Pending Validation' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
-                                            {order.estado === 'pagado' ? 'Pagado' : (order.estado || order.status || 'Pendiente')}
+                                            ${order.estado === 'entregado' || order.estado === 'Delivered' ? 'bg-green-100 text-green-600' :
+                                                order.estado === 'pendiente' || order.estado === 'Pending Validation' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                                            {order.estado === 'pagado' ? 'Pagado' : (order.estado || 'Pendiente')}
                                         </p>
                                         {order.payIdProof && (
                                             <button

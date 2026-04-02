@@ -48,8 +48,10 @@ export default function KitchenDashboard() {
                 const { data: ordersData, error } = await supabase
                     .from('orders')
                     .select('*, order_items(*, menu_items(nombre))')
-                    .in('estado', ['pagado', 'preparando'])
                     .order('created_at', { ascending: false });
+
+                console.log('Orders query result:', ordersData);
+                console.log('Orders query error:', error);
 
                 if (error) {
                     console.error('Error fetching orders:', error);
