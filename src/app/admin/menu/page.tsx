@@ -34,13 +34,18 @@ export default function AdminMenuPage() {
                 // Fetch weekly_menu_items to map Supabase overrides
                 const { data: wmiData } = await supabase
                     .from('weekly_menu_items')
-                    .select('day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
+                    .select('weekly_menu_id, day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
                 
                 if (wmiData) {
                     const mappedPlates: Record<string, any> = {};
                     wmiData.forEach((wmi: any) => {
-                         if (wmi.menu_items) {
-                             mappedPlates[wmi.menu_items.nombre] = wmi.menu_items; // Map by name for easy matching if UUIDs mismatch before SQL is run
+                         if (wmi.menu_items && wmi.weekly_menu_id && wmi.day_of_week) {
+                             const swId = mappedData.find((w:any) => w.id === wmi.weekly_menu_id)?.staticWeekId;
+                             if (swId) {
+                                 mappedPlates[`${swId}-${wmi.day_of_week.toLowerCase()}`] = wmi.menu_items;
+                             }
+                             // fallback map by name
+                             mappedPlates[wmi.menu_items.nombre] = wmi.menu_items;
                          }
                     });
                     setDbMealsMap(mappedPlates);
@@ -127,7 +132,8 @@ export default function AdminMenuPage() {
         const price = parseFloat((formData.get('price') as string) || "18.00");
         const tags = (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean);
 
-        const dbMeal = dbMealsMap[originalMeal.title] || dbMealsMap[title]; // try to find existing DB record
+        const dayKey = `${selectedWeekId}-${originalMeal.day.toLowerCase()}`;
+        const dbMeal = dbMealsMap[dayKey] || dbMealsMap[originalMeal.title] || dbMealsMap[title]; // try to find existing DB record
 
         try {
             setSavingMealId(originalMeal.id);
@@ -150,8 +156,20 @@ export default function AdminMenuPage() {
                     categoria: 'plato_fuerte',
                     disponible: true
                 };
-                const { error } = await supabase.from('menu_items').insert([insertData]);
+                const { error, data } = await supabase.from('menu_items').insert([insertData]).select();
                 if (error) throw error;
+                
+                if (data && data[0]) {
+                    const insertedItemId = data[0].id;
+                    const targetDbWeek = weeksData.find(w => w.staticWeekId === selectedWeekId);
+                    if (targetDbWeek) {
+                        await supabase.from('weekly_menu_items').insert([{
+                            weekly_menu_id: targetDbWeek.id,
+                            menu_item_id: insertedItemId,
+                            day_of_week: originalMeal.day.toLowerCase()
+                        }]);
+                    }
+                }
             }
             
             console.log(`Saved item ${title} to Supabase...`);
@@ -279,7 +297,8 @@ export default function AdminMenuPage() {
             <div className="grid grid-cols-1 gap-6">
                 {currentMenu.meals.map((meal) => {
                     // Merge Supabase data if available, falling back to local
-                    const dbMeal = dbMealsMap[meal.title] || dbMealsMap[meal.id]; 
+                    const dayKey = `${selectedWeekId}-${meal.day.toLowerCase()}`;
+                    const dbMeal = dbMealsMap[dayKey] || dbMealsMap[meal.title] || dbMealsMap[meal.id]; 
                     const mergedMeal = {
                         ...meal,
                         title: dbMeal?.nombre || meal.title,
