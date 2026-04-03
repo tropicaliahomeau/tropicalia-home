@@ -147,7 +147,7 @@ export default function AdminMenuPage() {
                     imagen_url: image,
                     precio: price,
                     tags: tags,
-                    categoria: 'principal',
+                    categoria: 'plato_fuerte',
                     disponible: true
                 };
                 const { error } = await supabase.from('menu_items').insert([insertData]);
