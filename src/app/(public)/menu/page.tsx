@@ -25,7 +25,7 @@ export default function MenuPage() {
 
     useEffect(() => {
         const fetchStatus = async () => {
-            const { data } = await supabase.from('weekly_menus').select('is_enabled').order('semana_inicio', { ascending: true });
+            const { data } = await supabase.from('weekly_menus').select('id, is_enabled').order('semana_inicio', { ascending: true });
             if (data) {
                 const enabled = data.map((w, index) => w.is_enabled ? `week-${index + 1}` : null).filter(Boolean) as string[];
                 setEnabledWeeks(enabled);
