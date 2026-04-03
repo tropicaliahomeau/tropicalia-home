@@ -38,13 +38,21 @@ export default function MenuPage() {
             // Fetch weekly_menu_items to map Supabase overrides
             const { data: wmiData } = await supabase
                 .from('weekly_menu_items')
-                .select('day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
+                .select('weekly_menu_id, day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
             
-            if (wmiData) {
+            if (wmiData && data) { // data comes from weekly_menus query above
                 const mappedPlates: Record<string, any> = {};
+                // We need to map DB weekly_menus to staticWeekIds to construct the dayKey
+                const weekIdMap = data.map((w, index) => ({ id: w.id, staticWeekId: `week-${index + 1}` }));
+
                 wmiData.forEach((wmi: any) => {
-                     if (wmi.menu_items) {
-                         mappedPlates[wmi.menu_items.nombre] = wmi.menu_items; // Map by name for easy matching
+                     const item = Array.isArray(wmi.menu_items) ? wmi.menu_items[0] : wmi.menu_items;
+                     if (item && wmi.weekly_menu_id && wmi.day_of_week) {
+                         const swId = weekIdMap.find(w => w.id === wmi.weekly_menu_id)?.staticWeekId;
+                         if (swId) {
+                             mappedPlates[`${swId}-${wmi.day_of_week.toLowerCase()}`] = item;
+                         }
+                         mappedPlates[item.nombre] = item; // Map by name as fallback
                      }
                 });
                 setDbMealsMap(mappedPlates);
@@ -86,7 +94,8 @@ export default function MenuPage() {
     const selectFullWeek = () => {
         if (!isOrderingEnabled) return;
         currentMenu.meals.forEach(meal => {
-            const dbMeal = dbMealsMap[meal.title] || dbMealsMap[meal.id];
+            const dayKey = `${selectedWeekId}-${meal.day.toLowerCase()}`;
+            const dbMeal = dbMealsMap[dayKey] || dbMealsMap[meal.title] || dbMealsMap[meal.id];
             const mergedMealId = dbMeal?.id || meal.id;
             const mergedTitle = dbMeal?.nombre || meal.title;
             const mergedImage = dbMeal?.imagen_url || meal.image;
@@ -203,7 +212,8 @@ export default function MenuPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
                             {viewMode !== 'drinks' ? (
                                 currentMenu.meals.map((meal) => {
-                                    const dbMeal = dbMealsMap[meal.title] || dbMealsMap[meal.id];
+                                    const dayKey = `${selectedWeekId}-${meal.day.toLowerCase()}`;
+                                    const dbMeal = dbMealsMap[dayKey] || dbMealsMap[meal.title] || dbMealsMap[meal.id];
                                     const mergedMeal = {
                                         ...meal,
                                         id: dbMeal?.id || meal.id,

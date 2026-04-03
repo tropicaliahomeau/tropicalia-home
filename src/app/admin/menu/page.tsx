@@ -41,11 +41,12 @@ export default function AdminMenuPage() {
                     wmiData.forEach((wmi: any) => {
                          if (wmi.menu_items && wmi.weekly_menu_id && wmi.day_of_week) {
                              const swId = mappedData.find((w:any) => w.id === wmi.weekly_menu_id)?.staticWeekId;
-                             if (swId) {
-                                 mappedPlates[`${swId}-${wmi.day_of_week.toLowerCase()}`] = wmi.menu_items;
+                             const item = Array.isArray(wmi.menu_items) ? wmi.menu_items[0] : wmi.menu_items;
+                             if (swId && item) {
+                                 mappedPlates[`${swId}-${wmi.day_of_week.toLowerCase()}`] = item;
                              }
                              // fallback map by name
-                             mappedPlates[wmi.menu_items.nombre] = wmi.menu_items;
+                             if (item) mappedPlates[item.nombre] = item;
                          }
                     });
                     setDbMealsMap(mappedPlates);
