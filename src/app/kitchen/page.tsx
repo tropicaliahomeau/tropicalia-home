@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { MENUS } from '@/data/menus';
 
 
 
@@ -44,10 +45,10 @@ export default function KitchenDashboard() {
                     }
                 }
 
-                // Fetch orders and their nested order_items + menu item names
+                // Fetch orders and their nested order_items
                 const { data: ordersData, error } = await supabase
                     .from('orders')
-                    .select('*, order_items(*, menu_items(nombre))')
+                    .select('*, order_items(*)')
                     .order('created_at', { ascending: false });
 
                 console.log('Orders query result:', ordersData);
@@ -239,7 +240,20 @@ export default function KitchenDashboard() {
                                                 {(() => {
                                                     const allItems: any[] = [];
                                                     (order.order_items || []).forEach((item: any) => {
-                                                        const itemName = item.menu_items?.nombre || 'Item Desconocido';
+                                                        let itemName = item.menu_item_id;
+                                                        if (itemName) {
+                                                            let found = false;
+                                                            for (const w of MENUS) {
+                                                                const m = w.meals.find(meal => meal.id == itemName || meal.title === itemName);
+                                                                if (m) { itemName = m.title; found = true; break; }
+                                                            }
+                                                            if (!found) {
+                                                                // If item is string UUID, just show it or "Extra"
+                                                                // Actually order_items might have item_nombre if added? 
+                                                            }
+                                                        } else {
+                                                            itemName = 'Item Desconocido';
+                                                        }
                                                         allItems.push({ name: itemName, qty: item.cantidad || 1 });
                                                     });
 
