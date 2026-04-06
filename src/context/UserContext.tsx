@@ -136,8 +136,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const existingUser = allUsers.find((u: any) => u.email === email);
 
             if (!existingUser) {
-                alert("Account not found. Please register first to access your profile.");
+                // If authenticated by Supabase but not in mock localstorage, create them!
+                const newProfile: User = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: email.split('@')[0],
+                    email: email,
+                    role: "CUSTOMER"
+                };
+                allUsers.push(newProfile);
+                localStorage.setItem("tropicalia_all_users", JSON.stringify(allUsers));
+                setUser(newProfile);
+                localStorage.setItem("tropicalia_user", JSON.stringify(newProfile));
                 setIsLoading(false);
+                router.push('/dashboard');
                 return;
             }
 
@@ -193,10 +204,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }, 1000);
     }
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            const { supabase } = await import('@/lib/supabaseClient');
+            await supabase.auth.signOut();
+        } catch (e) { console.error(e); }
         setUser(null);
         localStorage.removeItem("tropicalia_user");
-        router.push("/");
+        router.push("/login");
     };
 
     const [allOrders, setAllOrders] = useState<Order[]>([]);

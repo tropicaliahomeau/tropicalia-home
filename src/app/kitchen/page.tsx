@@ -10,6 +10,7 @@ export default function KitchenDashboard() {
     const [orders, setOrders] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [weekMap, setWeekMap] = useState<Record<number, string>>({});
+    const [menuMap, setMenuMap] = useState<Record<string, string>>({});
     const [isSundayReset, setIsSundayReset] = useState(false);
 
     useEffect(() => {
@@ -33,17 +34,26 @@ export default function KitchenDashboard() {
                     const activeWeekId = activeWeekArr[0].id;
                     const { data: weekItems } = await supabase
                         .from('weekly_menu_items')
-                        .select('menu_item_id, day_of_week')
+                        .select('menu_item_id, dia')
                         .eq('weekly_menu_id', activeWeekId);
                         
                     if (weekItems) {
                         const map: Record<number, string> = {};
                         weekItems.forEach((wi: any) => {
-                            map[wi.menu_item_id] = wi.day_of_week;
+                            map[wi.menu_item_id] = wi.dia;
                         });
                         setWeekMap(map);
                     }
                 }
+
+                // Fetch all menu items mapping
+                const { data: allMenuItems } = await supabase.from('menu_items').select('id, nombre, precio');
+                const tempMenuMap: Record<string, string> = {};
+                if (allMenuItems) {
+                    allMenuItems.forEach((item: any) => { tempMenuMap[item.id] = item.nombre; });
+                }
+                MENUS.forEach(w => w.meals.forEach(m => { tempMenuMap[m.id as string] = m.title; }));
+                setMenuMap(tempMenuMap);
 
                 // Fetch orders and their nested order_items
                 const { data: ordersData, error } = await supabase
@@ -102,10 +112,16 @@ export default function KitchenDashboard() {
                             <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-4">DAILY TOTALS (CURRENT CYCLE)</h3>
                             <div className="grid grid-cols-5 gap-2">
                                 {['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map((day) => {
+                                    const EnToSp: Record<string, string> = {
+                                        'monday': 'lunes', 'tuesday': 'martes', 'wednesday': 'miercoles',
+                                        'thursday': 'jueves', 'friday': 'viernes'
+                                    };
+                                    const spanishDay = EnToSp[day];
+                                    
                                     const count = isSundayReset ? 0 : orders.reduce((sum, o) => {
                                         return sum + (o.order_items || []).reduce((itemSum: number, i: any) => {
                                             const itemDay = weekMap[i.menu_item_id];
-                                            if (itemDay === day) {
+                                            if (itemDay === spanishDay) {
                                                 return itemSum + (i.cantidad || 1);
                                             }
                                             return itemSum;
@@ -240,20 +256,7 @@ export default function KitchenDashboard() {
                                                 {(() => {
                                                     const allItems: any[] = [];
                                                     (order.order_items || []).forEach((item: any) => {
-                                                        let itemName = item.menu_item_id;
-                                                        if (itemName) {
-                                                            let found = false;
-                                                            for (const w of MENUS) {
-                                                                const m = w.meals.find(meal => meal.id == itemName || meal.title === itemName);
-                                                                if (m) { itemName = m.title; found = true; break; }
-                                                            }
-                                                            if (!found) {
-                                                                // If item is string UUID, just show it or "Extra"
-                                                                // Actually order_items might have item_nombre if added? 
-                                                            }
-                                                        } else {
-                                                            itemName = 'Item Desconocido';
-                                                        }
+                                                        const itemName = menuMap[item.menu_item_id] || item.menu_item_id || 'Item Desconocido';
                                                         allItems.push({ name: itemName, qty: item.cantidad || 1 });
                                                     });
 
