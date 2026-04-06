@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import styles from './login.module.css';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
 // Metadata removed because this is a client component
 
 export default function LoginPage() {
     const { login } = useUser();
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
@@ -28,11 +30,13 @@ export default function LoginPage() {
             return;
         }
 
-        // For demo purposes: tropicaliahome.au@gmail.com -> ADMIN, others -> CLIENT
-        let role: "CUSTOMER" | "ADMIN" = "CUSTOMER";
-        if (email === "tropicaliahome.au@gmail.com") role = "ADMIN";
-
-        login(email, role);
+        if (data.user) {
+            let role: "CUSTOMER" | "ADMIN" = "CUSTOMER";
+            if (email === "tropicaliahome.au@gmail.com") role = "ADMIN";
+    
+            login(email, role);
+            router.push(role === 'ADMIN' ? '/admin/dashboard' : '/dashboard');
+        }
     };
 
     return (

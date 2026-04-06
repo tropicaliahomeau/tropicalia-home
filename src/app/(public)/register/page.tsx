@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import styles from './register.module.css';
+import { supabase } from '@/lib/supabaseClient';
 
 // Metadata removed because this is a client component
 
@@ -19,7 +20,7 @@ export default function RegisterPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (password !== confirmPassword) {
             alert("Passwords do not match!");
@@ -38,6 +39,12 @@ export default function RegisterPage() {
 
         if (hasAllergies && allergyDetails.trim().split(/\s+/).length > 5) {
             alert("Allergy description must be max 5 words.");
+            return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+            alert("Error registering: " + error.message);
             return;
         }
 
