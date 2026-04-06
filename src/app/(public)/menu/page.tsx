@@ -38,19 +38,23 @@ export default function MenuPage() {
             // Fetch weekly_menu_items to map Supabase overrides
             const { data: wmiData } = await supabase
                 .from('weekly_menu_items')
-                .select('weekly_menu_id, day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
+                .select('weekly_menu_id, dia, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
             
             if (wmiData && data) { // data comes from weekly_menus query above
                 const mappedPlates: Record<string, any> = {};
                 // We need to map DB weekly_menus to staticWeekIds to construct the dayKey
                 const weekIdMap = data.map((w, index) => ({ id: w.id, staticWeekId: `week-${index + 1}` }));
+                const dayMap: Record<string, string> = {
+                  'lunes': 'monday', 'martes': 'tuesday', 'miercoles': 'wednesday',
+                  'jueves': 'thursday', 'viernes': 'friday'
+                };
 
                 wmiData.forEach((wmi: any) => {
                      const item = Array.isArray(wmi.menu_items) ? wmi.menu_items[0] : wmi.menu_items;
-                     if (item && wmi.weekly_menu_id && wmi.day_of_week) {
+                     if (item && wmi.weekly_menu_id && wmi.dia) {
                          const swId = weekIdMap.find(w => w.id === wmi.weekly_menu_id)?.staticWeekId;
                          if (swId) {
-                             mappedPlates[`${swId}-${wmi.day_of_week.toLowerCase()}`] = item;
+                             mappedPlates[`${swId}-${dayMap[wmi.dia] || wmi.dia}`] = item;
                          }
                          mappedPlates[item.nombre] = item; // Map by name as fallback
                      }

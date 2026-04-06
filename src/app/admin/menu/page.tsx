@@ -34,16 +34,20 @@ export default function AdminMenuPage() {
                 // Fetch weekly_menu_items to map Supabase overrides
                 const { data: wmiData } = await supabase
                     .from('weekly_menu_items')
-                    .select('weekly_menu_id, day_of_week, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
+                    .select('weekly_menu_id, dia, menu_items(id, nombre, descripcion, precio, imagen_url, tags, disponible)');
                 
                 if (wmiData) {
                     const mappedPlates: Record<string, any> = {};
+                    const dayMap: Record<string, string> = {
+                      'lunes': 'monday', 'martes': 'tuesday', 'miercoles': 'wednesday',
+                      'jueves': 'thursday', 'viernes': 'friday'
+                    };
                     wmiData.forEach((wmi: any) => {
-                         if (wmi.menu_items && wmi.weekly_menu_id && wmi.day_of_week) {
+                         if (wmi.menu_items && wmi.weekly_menu_id && wmi.dia) {
                              const swId = mappedData.find((w:any) => w.id === wmi.weekly_menu_id)?.staticWeekId;
                              const item = Array.isArray(wmi.menu_items) ? wmi.menu_items[0] : wmi.menu_items;
                              if (swId && item) {
-                                 mappedPlates[`${swId}-${wmi.day_of_week.toLowerCase()}`] = item;
+                                 mappedPlates[`${swId}-${dayMap[wmi.dia] || wmi.dia}`] = item;
                              }
                              // fallback map by name
                              if (item) mappedPlates[item.nombre] = item;
@@ -164,10 +168,14 @@ export default function AdminMenuPage() {
                     const insertedItemId = data[0].id;
                     const targetDbWeek = weeksData.find(w => w.staticWeekId === selectedWeekId);
                     if (targetDbWeek) {
+                        const reverseDayMap: Record<string, string> = {
+                          'monday': 'lunes', 'tuesday': 'martes', 'wednesday': 'miercoles',
+                          'thursday': 'jueves', 'friday': 'viernes'
+                        };
                         await supabase.from('weekly_menu_items').insert([{
                             weekly_menu_id: targetDbWeek.id,
                             menu_item_id: insertedItemId,
-                            day_of_week: originalMeal.day.toLowerCase()
+                            dia: reverseDayMap[originalMeal.day.toLowerCase()] || originalMeal.day.toLowerCase()
                         }]);
                     }
                 }
