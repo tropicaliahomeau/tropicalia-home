@@ -82,7 +82,7 @@ export async function POST(request: Request) {
                 email_cliente: email || '',
                 telefono: phone || '',
                 total: amount,
-                estado: 'pagado', // As requested
+                estado: 'preparando', // As requested
                 metodo_pago: 'square_card'
             })
             .select()

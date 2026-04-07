@@ -53,6 +53,14 @@ export default function KitchenDashboard() {
                     allMenuItems.forEach((item: any) => { tempMenuMap[item.id] = item.nombre; });
                 }
                 MENUS.forEach(w => w.meals.forEach(m => { tempMenuMap[m.id as string] = m.title; }));
+                const hardcodedExtras = [
+                    { id: '1', name: 'Pony Malta' },
+                    { id: '2', name: 'Colombiana' },
+                    { id: '3', name: 'Manzana Postobón' },
+                    { id: '4', name: 'Bom bom bum' },
+                    { id: '5', name: 'Mini Chocorramo' },
+                ];
+                hardcodedExtras.forEach(e => { tempMenuMap[e.id] = e.name; });
                 setMenuMap(tempMenuMap);
 
                 // Fetch orders and their nested order_items
@@ -85,7 +93,7 @@ export default function KitchenDashboard() {
     const changeStatus = async (orderId: number, newStatus: string) => {
         try {
             await supabase.from('orders').update({ estado: newStatus }).eq('id', orderId);
-            setOrders(orders.filter(o => o.id !== orderId));
+            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: newStatus } : o));
             alert('Order marked as picked up ✓');
         } catch (e) {
             console.error('Failed to change status', e);
@@ -93,9 +101,11 @@ export default function KitchenDashboard() {
     };
 
     const filteredOrders = orders.filter(order =>
-        (order.telefono || '').includes(searchTerm) ||
-        (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.id || '').toString().includes(searchTerm)
+        order.estado === 'preparando' && (
+            (order.telefono || '').includes(searchTerm) ||
+            (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (order.id || '').toString().includes(searchTerm)
+        )
     );
 
 
@@ -119,6 +129,7 @@ export default function KitchenDashboard() {
                                     const spanishDay = EnToSp[day];
                                     
                                     const count = isSundayReset ? 0 : orders.reduce((sum, o) => {
+                                        if (o.estado !== 'preparando') return sum;
                                         return sum + (o.order_items || []).reduce((itemSum: number, i: any) => {
                                             const itemDay = weekMap[i.menu_item_id];
                                             if (itemDay === spanishDay) {

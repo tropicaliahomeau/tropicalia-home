@@ -85,8 +85,7 @@ export default function DashboardPage() {
                 { name: 'Gastos', valor: totalExp || (revenue * 0.35), fill: '#ef4444' }
             ]);
 
-            setRecentOrders(orders.slice(-10).reverse());
-            setRecentOrders(orders.slice(-10).reverse());
+            setRecentOrders(orders.slice(0, 10));
         } catch (e) {
             console.error("Dashboard Sync Error:", e);
         }
