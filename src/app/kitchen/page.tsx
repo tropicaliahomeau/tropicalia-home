@@ -34,13 +34,17 @@ export default function KitchenDashboard() {
                     const activeWeekId = activeWeekArr[0].id;
                     const { data: weekItems } = await supabase
                         .from('weekly_menu_items')
-                        .select('menu_item_id, dia')
+                        .select('menu_item_id, dia, menu_items(id, nombre)')
                         .eq('weekly_menu_id', activeWeekId);
                         
                     if (weekItems) {
                         const map: Record<string, string> = {};
                         weekItems.forEach((wi: any) => {
+                            const item = Array.isArray(wi.menu_items) ? wi.menu_items[0] : wi.menu_items;
                             map[String(wi.menu_item_id)] = wi.dia;
+                            if (item && item.nombre) {
+                                map[item.nombre] = wi.dia;
+                            }
                         });
                         setWeekMap(map);
                     }
@@ -92,16 +96,11 @@ export default function KitchenDashboard() {
 
     const changeStatus = async (orderId: number) => {
         try {
-            // Set temporary state for animation
-            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: 'picked_up' } : o));
+            // Remove instantly
+            setOrders(prev => prev.filter(o => o.id !== orderId));
             
             // Update Supabase in background
             await supabase.from('orders').update({ estado: 'picked_up' }).eq('id', orderId);
-            
-            // Remove after 1 second
-            setTimeout(() => {
-                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, estado: 'picked_up' } : o));
-            }, 1000);
         } catch (e) {
             console.error('Failed to change status', e);
             // Revert on error
@@ -110,7 +109,7 @@ export default function KitchenDashboard() {
     };
 
     const filteredOrders = orders.filter(order =>
-        (order.estado === 'preparando' || order.estado === 'picked_up') && (
+        (order.estado === 'preparando') && (
             (order.telefono || '').includes(searchTerm) ||
             (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.id || '').toString().includes(searchTerm)
@@ -140,7 +139,8 @@ export default function KitchenDashboard() {
                                     const count = isSundayReset ? 0 : orders.reduce((sum, o) => {
                                         if (o.estado !== 'preparando') return sum;
                                         return sum + (o.order_items || []).reduce((itemSum: number, i: any) => {
-                                            const itemDay = weekMap[String(i.menu_item_id)];
+                                            const itemName = menuMap[String(i.menu_item_id)];
+                                            const itemDay = weekMap[String(i.menu_item_id)] || (itemName && weekMap[itemName]) || weekMap[i.nombre] || weekMap[i.menu_items?.nombre];
                                             if (!itemDay) return itemSum;
                                             
                                             const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -304,17 +304,12 @@ export default function KitchenDashboard() {
 
                                     {/* Actions */}
                                     <div className="lg:col-span-2 flex flex-col items-center lg:items-end justify-center gap-2">
-                                        {(order.estado === 'preparando' || order.estado === 'picked_up') && (
+                                        {order.estado === 'preparando' && (
                                             <button
-                                                onClick={() => order.estado === 'preparando' && changeStatus(order.id)}
-                                                disabled={order.estado === 'picked_up'}
-                                                className={`w-full lg:w-fit px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                                                    order.estado === 'picked_up' 
-                                                    ? 'bg-green-500 text-white shadow-md' 
-                                                    : 'bg-[#ffc107] text-yellow-900 shadow-md hover:bg-[#ffb300] active:scale-95'
-                                                }`}
+                                                onClick={() => changeStatus(order.id)}
+                                                className="w-full lg:w-fit px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all bg-[#ffc107] text-yellow-900 shadow-md hover:bg-[#ffb300] active:scale-95"
                                             >
-                                                {order.estado === 'picked_up' ? 'Picked Up ✓' : 'Preparing'}
+                                                Preparing
                                             </button>
                                         )}
                                     </div>
