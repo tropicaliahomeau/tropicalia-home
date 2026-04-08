@@ -89,7 +89,7 @@ export default function KitchenDashboard() {
             }
         };
 
-        const interval = setInterval(loadOrders, 5000);
+        const interval = setInterval(loadOrders, 30000);
         loadOrders();
         return () => clearInterval(interval);
     }, []);
@@ -97,7 +97,7 @@ export default function KitchenDashboard() {
     const changeStatus = async (orderId: number) => {
         try {
             // Remove instantly
-            setOrders(prev => prev.filter(o => o.id !== orderId));
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, estado: 'picked_up' } : o));
             
             // Update Supabase in background
             await supabase.from('orders').update({ estado: 'picked_up' }).eq('id', orderId);
@@ -109,7 +109,7 @@ export default function KitchenDashboard() {
     };
 
     const filteredOrders = orders.filter(order =>
-        (order.estado === 'preparando') && (
+        (order.estado === 'preparando' || order.estado === 'picked_up') && (
             (order.telefono || '').includes(searchTerm) ||
             (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.id || '').toString().includes(searchTerm)
@@ -304,14 +304,16 @@ export default function KitchenDashboard() {
 
                                     {/* Actions */}
                                     <div className="lg:col-span-2 flex flex-col items-center lg:items-end justify-center gap-2">
-                                        {order.estado === 'preparando' && (
-                                            <button
-                                                onClick={() => changeStatus(order.id)}
-                                                className="w-full lg:w-fit px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all bg-[#ffc107] text-yellow-900 shadow-md hover:bg-[#ffb300] active:scale-95"
-                                            >
-                                                Preparing
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => order.estado === 'preparando' && changeStatus(order.id)}
+                                            disabled={order.estado === 'picked_up'}
+                                            className={order.estado === 'picked_up'
+                                                ? 'bg-green-500 text-white px-4 py-3 rounded-2xl font-black text-xs uppercase cursor-not-allowed opacity-75'
+                                                : 'bg-yellow-500 text-white px-4 py-3 rounded-2xl font-black text-xs uppercase hover:bg-yellow-600 cursor-pointer'
+                                            }
+                                        >
+                                            {order.estado === 'picked_up' ? 'Picked Up ✓' : 'Preparing'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
