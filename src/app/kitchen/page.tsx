@@ -93,7 +93,7 @@ export default function KitchenDashboard() {
     const changeStatus = async (orderId: number) => {
         try {
             // Set temporary state for animation
-            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: 'picking_up' } : o));
+            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: 'picked_up' } : o));
             
             // Update Supabase in background
             await supabase.from('orders').update({ estado: 'picked_up' }).eq('id', orderId);
@@ -110,7 +110,7 @@ export default function KitchenDashboard() {
     };
 
     const filteredOrders = orders.filter(order =>
-        (order.estado === 'preparando' || order.estado === 'picking_up') && (
+        (order.estado === 'preparando' || order.estado === 'picked_up') && (
             (order.telefono || '').includes(searchTerm) ||
             (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.id || '').toString().includes(searchTerm)
@@ -304,12 +304,12 @@ export default function KitchenDashboard() {
 
                                     {/* Actions */}
                                     <div className="lg:col-span-2 flex flex-col items-center lg:items-end justify-center gap-2">
-                                        {(order.estado === 'preparando' || order.estado === 'picking_up') && (
+                                        {(order.estado === 'preparando' || order.estado === 'picked_up') && (
                                             <button
                                                 onClick={() => order.estado === 'preparando' && changeStatus(order.id)}
-                                                disabled={order.estado === 'picking_up'}
+                                                disabled={order.estado === 'picked_up'}
                                                 className={`w-full lg:w-fit px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                                                    order.estado === 'picking_up' 
+                                                    order.estado === 'picked_up' 
                                                     ? 'bg-green-500 text-white shadow-md' 
                                                     : 'bg-[#ffc107] text-yellow-900 shadow-md hover:bg-[#ffb300] active:scale-95'
                                                 }`}
