@@ -1,0 +1,12 @@
+[
+  {
+    "id": "5ceec309-e1f5-4ee5-99e3-19ce9294ee79",
+    "nombre": "Arroz con Pollo",
+    "descripcion": "Arroz amarillo con pollo guisado y ensalada",
+    "precio": 12.99,
+    "categoria": "plato_fuerte",
+    "imagen_url": null,
+    "disponible": true,
+    "created_at": "2026-03-25T01:44:30.92236+00:00"
+  }
+]

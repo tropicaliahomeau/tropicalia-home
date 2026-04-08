@@ -1,0 +1,30 @@
+b43380c fix
+02c1f18 Fix Admin toggle layout, restore Client menu logic, keep Drinks visibility
+6bea097 fix(fixes): implement week toggle in admin, filter on frontend, and robust payment inserts via service role
+d425046 fix(3 issues): translations, kitchen orders, admin orders
+0510ba4 chore: fixed problems 6, 7 and 8
+c8a38a2 Add .env.production with Square credentials for Vercel
+27492f4 Update Square from Sandbox to Production
+c7e0f6f fix: Supabase client ENOTFOUND placeholder error
+df632c5 fix: Add Square-Version header to Square payments API
+7cf4273 fix: Supabase client env fallback for Vercel build
+88eccb1 fix: Type error on Square tokenization response
+59d1104 feat: Integrate Square payments, restore original menu tabs, and translate UI to English
+03888b5 UI: Fix spelling for Bom bom bum and Chocoramo
+e842506 UI: Add Bon Bon Bum and Chocorramo to drinks section, rename tab
+f126c98 UI: Add 3-way toggle for daily, weekly, and drinks selection
+6647214 UI: Add collapsible PayID instructions
+b4b5945 UI: Simplify checkout, remove drinks section and PayID tutorial
+e5c3828 UI: Refined menu selection with 3-way toggle (Por día, Semana, Bebidas)
+cde2d64 Fix: CSS Module global selectors error
+b4c0439 UI/UX: Phase 9 - Comprehensive updates, mobile fixes, and transaction details
+f713e43 Fix: Checkout flow hang due to storage limits and missing feedback
+d973587 UI: Update Hero Image to HD version
+b7785e7 Refactor: Admin Sidebar expenses, Login UI, and Menu PayID updates
+efca266 Fix: Ensure PayID upload visible and button enabled logic
+792a41a Admin Validation, Finance Module, and PayID Exclusivity
+91a4a32 Phase 3: Revert logo, add kitchen macro summary, and implement admin proof viewer
+bb3c64c Fix: Add missing Image import in Navbar
+9e8f8ce Phase 2 Refinements: New logo, PayID instructions, UI cleanup and Admin dashboard enhancements
+6652338 Final project adjustments: Security (PINs & Sessions), PayID updates, and Brand Identity refinement
+2965ca5 Overhaul kitchen panel: PIN access, real data integration, and compact UI redesign

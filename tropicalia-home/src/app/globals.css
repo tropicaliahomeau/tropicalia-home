@@ -11,8 +11,19 @@
 @media (prefers-color-scheme: dark) {
     :root {
         --foreground-rgb: 255, 255, 255;
-        --background-start-rgb: 0, 0, 0;
-        --background-end-rgb: 0, 0, 0;
+        --primary: #4A5D23;
+        /* Darker primary for better contrast */
+        --primary-light: #5d752c;
+        --secondary: #00BFB9;
+        /* Keep sea teal */
+        --accent: #FF6B35;
+        /* High contrast orange */
+        --background: #1A1A1A;
+        --foreground: #FFFFFF;
+        --text-main: #FFFFFF;
+        --text-secondary: #B0B0B0;
+        --card-bg: #2A2A2A;
+        --border: #3A3A3A;
     }
 }
 

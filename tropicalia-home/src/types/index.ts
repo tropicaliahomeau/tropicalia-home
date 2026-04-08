@@ -1,6 +1,6 @@
 // Domain Types for Tropicalia HOME V2
 
-export type UserRole = 'admin' | 'kitchen' | 'staff' | 'customer';
+export type UserRole = 'ADMIN' | 'KITCHEN' | 'STAFF' | 'CUSTOMER';
 
 export interface User {
     id: number;
@@ -8,6 +8,8 @@ export interface User {
     email: string;
     role: UserRole;
     phone?: string;
+    allergies?: string;
+    referralCount?: number;
 }
 
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes';

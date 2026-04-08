@@ -1,14 +1,15 @@
 .footer {
     background-color: var(--card-bg);
     border-top: 1px solid var(--border);
-    padding: var(--spacing-2xl) 0 var(--spacing-lg);
+    padding: var(--spacing-3xl) 0 var(--spacing-xl);
     margin-top: auto;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md);
+    padding: 0 var(--spacing-xl);
+    /* Increased lateral padding */
 }
 
 .content {
@@ -35,14 +36,18 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    overflow: hidden;
+    background-color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
     flex-shrink: 0;
 }
 
-.logoImage {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.homeIconFooter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .logoText {

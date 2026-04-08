@@ -9,8 +9,8 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={styles.heroBackground}>
           <Image
-            src="/hero-new.jpg"
-            alt="Delicious Tropical Lunch"
+            src="/hero-hd.jpg"
+            alt="Tropicalia Home Latin Food"
             fill
             className={styles.heroImage}
             priority
@@ -54,9 +54,9 @@ export default function Home() {
               <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm group-hover:scale-110 transition-transform">
                 🥑
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-white">Ingredientes Frescos</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-white">Fresh Ingredients</h3>
               <p className="text-gray-600 leading-relaxed group-hover:text-green-50">
-                Comida preparada con ingredientes frescos y auténtico sabor latino real. Sin conservantes, solo sabor casero.
+                Meals prepared with fresh ingredients and authentic Latin flavor. No preservatives, just homemade taste.
               </p>
             </div>
 
@@ -65,9 +65,9 @@ export default function Home() {
               <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm group-hover:scale-110 transition-transform">
                 🛍️
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-white">Organizamos tu Entrega</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-white">We Organize Your Delivery</h3>
               <p className="text-gray-600 leading-relaxed group-hover:text-green-50">
-                Recoge tu <b>Weekly Meal</b> en Tropicalia Latin Food (201 Ballarat Road, Footscray) o coordinamos tu entrega a domicilio.
+                Pick up your <b>Weekly Meal</b> at Tropicalia Latin Food (201 Ballarat Road, Footscray) or we can arrange home delivery.
               </p>
             </div>
 
@@ -76,9 +76,9 @@ export default function Home() {
               <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm group-hover:scale-110 transition-transform">
                 📅
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-white">Sin Planes, Sin Compromisos</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-white">No Plans, No Commitments</h3>
               <p className="text-gray-600 leading-relaxed group-hover:text-green-50">
-                Pide solo los días que tú quieras. Tú decides cuándo comer en Tropicalia sin ataduras ni contratos.
+                Order only on the days you want. You decide when to eat at Tropicalia with no strings or contracts attached.
               </p>
             </div>
           </div>
@@ -146,18 +146,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className={styles.ctaSection}>
-        <div className={styles.ctaOverlay}></div>
-        <div className={styles.ctaContent}>
-          <h2 className={styles.ctaTitle}>Ready to Upgrade Your Lunch?</h2>
-          <p className={styles.ctaText}>
-            Join hundreds of happy customers enjoying the taste of paradise.
-            First week is 20% off!
+      {/* Marketing & Conversion: Come gratis con Tropicalia */}
+      <section className="bg-[#4A5D23] py-20 text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">Eat for free with Tropicalia</h2>
+          <p className="text-xl md:text-2xl mb-10 max-w-3xl mx-auto text-white/90">
+            Your passion for Latin flavor is rewarded. <br className="hidden md:block" />
+            Discover how your network of friends can unlock free weeks of food.
           </p>
-          <Link href="/register" className={styles.ctaButton}>
-            Get Started Today
-          </Link>
         </div>
       </section>
     </div>

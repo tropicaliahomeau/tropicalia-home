@@ -2,7 +2,7 @@
 
 import { useUser } from '@/context/UserContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from './dashboard.module.css';
 
@@ -10,12 +10,38 @@ export default function ClientDashboard() {
     const { user, isLoading, allOrders } = useUser();
     const router = useRouter();
 
+    const [myOrders, setMyOrders] = useState<any[]>([]);
+    const [nextDelivery, setNextDelivery] = useState<any>(null);
+
     useEffect(() => {
         if (!isLoading && !user) {
             router.push('/login');
+        } else if (!isLoading && user && user.role !== 'ADMIN' && (!user.phone || !user.allergies)) {
+            router.push('/register');
         }
     }, [user, isLoading, router]);
 
+    useEffect(() => {
+        async function fetchOrders() {
+            if (user?.email) {
+                const { supabase } = await import('@/lib/supabaseClient');
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('email_cliente', user.email)
+                    .order('created_at', { ascending: false });
+
+                if (!error && data) {
+                    setMyOrders(data);
+                    const pagado = data.filter(o => o.estado === 'pagado');
+                    if (pagado.length > 0) {
+                        setNextDelivery(pagado[0]);
+                    }
+                }
+            }
+        }
+        fetchOrders();
+    }, [user?.email]);
 
     if (isLoading || !user) {
         return (
@@ -25,19 +51,15 @@ export default function ClientDashboard() {
         );
     }
 
-    // Filter orders for this user
-    const myOrders = allOrders ? allOrders.filter(o => o.customerId === user.id) : [];
-
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     // Helper for status badge class
     const getStatusClass = (status: string) => {
-        switch (status) {
-            case 'Pending': return styles.statusPending;
-            case 'Ready': return styles.statusReady;
-            case 'Delivered': return styles.statusDelivered;
-            default: return styles.statusPending;
-        }
+        const s = status ? status.toLowerCase() : '';
+        if (s.includes('pending') || s.includes('pendiente')) return styles.statusPending;
+        if (s.includes('ready') || s.includes('preparando')) return styles.statusReady;
+        if (s.includes('delivered') || s.includes('entregado')) return styles.statusDelivered;
+        return styles.statusPending;
     };
 
     // Referral Logic
@@ -68,20 +90,20 @@ export default function ClientDashboard() {
                     <div className="flex-1 text-center md:text-left">
                         <h3 className="text-xl font-bold mb-1">
                             {isFreeWeekUnlocked
-                                ? "¡Felicidades! Has desbloqueado tu semana gratis 🎉"
-                                : "¡Gana una Semana de Almuerzos GRATIS!"}
+                                ? "Congratulations! You have unlocked your free week 🎉"
+                                : "Win a FREE Week of Lunches!"}
                         </h3>
                         <p className="text-green-50 text-sm mb-3 font-medium">
                             {isFreeWeekUnlocked
-                                ? "Tu recompensa se aplicará automáticamente en tu próxima renovación."
-                                : `Refiere a ${referralsNeeded} amigos y disfruta de 5 días de almuerzo por nuestra cuenta.`}
+                                ? "Your reward will be applied automatically on your next renewal."
+                                : `Refer ${referralsNeeded} friends and enjoy 5 days of lunch on us.`}
                         </p>
 
                         {/* Progress Bar */}
                         <div className="w-full max-w-md mx-auto md:mx-0">
                             <div className="flex justify-between text-xs font-bold text-white mb-1">
-                                <span>Progreso</span>
-                                <span>{referrals}/{referralsNeeded} amigos</span>
+                                <span>Progress</span>
+                                <span>{referrals}/{referralsNeeded} friends</span>
                             </div>
                             <div className="bg-black/20 h-4 rounded-full overflow-hidden relative border border-white/10">
                                 <div
@@ -92,15 +114,15 @@ export default function ClientDashboard() {
                                 </div>
                             </div>
                             <p className="text-xs text-green-100 mt-1 italic">
-                                {isFreeWeekUnlocked ? "¡Meta alcanzada!" : `¡Te faltan solo ${referralsNeeded - referrals} referidos!`}
+                                {isFreeWeekUnlocked ? "Goal reached!" : `You need just ${referralsNeeded - referrals} referrals!`}
                             </p>
                         </div>
                     </div>
                     <div className="text-center">
                         <div className="bg-white/10 rounded-xl p-4 backdrop-blur-md border border-white/20 shadow-lg">
-                            <p className="text-xs uppercase tracking-wider text-green-100 mb-1 font-bold">Tu Código</p>
+                            <p className="text-xs uppercase tracking-wider text-green-100 mb-1 font-bold">YOUR CODE</p>
                             <p className="text-2xl font-mono font-bold tracking-widest text-white text-shadow">{user.phone || "..."}</p>
-                            {!user.phone && <p className="text-[10px] text-yellow-200 mt-1 p-1 bg-black/20 rounded">Agrega tu teléfono en perfil</p>}
+                            {!user.phone && <p className="text-[10px] text-yellow-200 mt-1 p-1 bg-black/20 rounded">Add your phone in profile</p>}
                         </div>
                     </div>
                 </div>
@@ -110,26 +132,37 @@ export default function ClientDashboard() {
                 {/* Next Delivery Card */}
                 <div className={`${styles.card} lg:col-span-5 border-t-4 border-[#D4A373]`}>
                     <h2 className={styles.cardTitle}>
-                        <span className="text-2xl">🚚</span> Próxima Entrega
+                        <span className="text-2xl">🚚</span> Next Delivery
                     </h2>
-                    {user.subscription && user.subscription.meals.length > 0 ? (
+                    {nextDelivery ? (
                         <div className={styles.deliveryInfo}>
-                            <div className={styles.deliveryTime}>Mañana, 12:30 PM</div>
+                            <div className="text-[#4A5D23] font-bold text-sm mb-2">📍 Pick-up Point:</div>
+                            <div className="text-gray-700 text-xs mb-3 space-y-1">
+                                <p>Tropicalia Latin Food</p>
+                                <p>201 Ballarat Rd, Footscray</p>
+                                <p className="italic">(La Esquina Latina)</p>
+                            </div>
+                            <div className="bg-orange-50 border border-orange-100 p-2 rounded-lg mb-4">
+                                <p className="text-orange-800 text-xs font-bold">⏰ Hours:</p>
+                                <p className="text-orange-900 text-sm font-bold">Sunday from 4:00 PM to 9:00 PM</p>
+                            </div>
                             <div className={styles.deliveryDetail}>
-                                <p className="font-bold text-gray-800">Menú Semanal Nutritivo</p>
-                                <p className="text-sm mt-1">Pedido #{user.subscription.meals[0]} • Porción Regular</p>
+                                <p className="font-bold text-gray-800">Confirmed Order</p>
+                                <p className="text-sm mt-1 text-[#4A5D23] font-bold">
+                                    Pedido #{nextDelivery.id}
+                                </p>
                             </div>
                             <div className={styles.deliveryStatus}>
-                                <span>🕒</span> Preparando tu almuerzo...
+                                <span>🕒</span> Preparing your lunch...
                             </div>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-10 text-center">
                             <div className="text-5xl mb-4 opacity-20">🍽️</div>
-                            <p className="text-gray-600 font-medium mb-2">Aún no has confirmado tu pedido de la semana.</p>
-                            <p className="text-gray-500 text-sm italic mb-6">Hazlo antes del viernes para empezar a preparar tus lunches.</p>
+                            <p className="text-gray-600 font-medium mb-2">You haven't confirmed your weekly order yet.</p>
+                            <p className="text-gray-500 text-sm italic mb-6">Order before Friday to start preparing your lunches.</p>
                             <Link href="/menu" className="bg-[#4A5D23] text-white px-6 py-2 rounded-lg hover:bg-[#3a491c] transition-colors font-bold shadow-lg shadow-[#4A5D23]/20">
-                                Seleccionar mi Menú
+                                Select my Menu
                             </Link>
                         </div>
                     )}
@@ -139,11 +172,11 @@ export default function ClientDashboard() {
                 <div className={`${styles.card} lg:col-span-7 border-t-4 border-[#4A5D23]`}>
                     <div className="flex justify-between items-center mb-6">
                         <h2 className={styles.cardTitle}>
-                            <span className="text-2xl">📜</span> Historial de Pedidos
+                            <span className="text-2xl">📜</span> Order History
                         </h2>
                         {myOrders.length > 0 && (
                             <button className="text-xs font-bold text-[#4A5D23] uppercase tracking-wider hover:underline">
-                                Ver todo
+                                View all
                             </button>
                         )}
                     </div>
@@ -151,18 +184,18 @@ export default function ClientDashboard() {
                     {myOrders.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <div className="text-5xl mb-4 opacity-20">📜</div>
-                            <p className="text-gray-400 font-medium italic">Aún no tienes historial de pedidos.</p>
+                            <p className="text-gray-400 font-medium italic">No order history yet.</p>
                         </div>
                     ) : (
                         <ul className="flex flex-col gap-4">
                             {myOrders.map(order => (
                                 <li key={order.id} className={styles.orderItem}>
                                     <div className={styles.orderInfo}>
-                                        <span className={styles.orderDate}>Almuerzo de Hoy</span>
-                                        <span className={styles.orderMenu}>{order.meal}</span>
+                                        <span className={styles.orderDate}>{new Date(order.created_at).toLocaleDateString()}</span>
+                                        <span className={styles.orderMenu}>${order.total} - Order #{order.id}</span>
                                     </div>
-                                    <span className={`${styles.statusBadge} ${getStatusClass(order.status)}`}>
-                                        {order.status}
+                                    <span className={`${styles.statusBadge} ${getStatusClass(order.estado)}`}>
+                                        {order.estado}
                                     </span>
                                 </li>
                             ))}

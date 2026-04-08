@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'CLIENT';
+export type UserRole = 'ADMIN' | 'KITCHEN' | 'STAFF' | 'CUSTOMER';
 
 export interface User {
     id: string;
@@ -44,7 +44,7 @@ export interface WeeklyFinance {
 
 export const MOCK_USERS: User[] = [
     { id: 'u1', name: 'Admin User', email: 'tropicaliahome.au@gmail.com', role: 'ADMIN', created_at: '2026-01-01T00:00:00Z' },
-    { id: 'u2', name: 'Client One', email: 'client1@test.com', role: 'CLIENT', created_at: '2026-01-10T00:00:00Z' },
+    { id: 'u2', name: 'Client One', email: 'client1@test.com', role: 'CUSTOMER', created_at: '2026-01-10T00:00:00Z' },
 ];
 
 export const MOCK_CUSTOMERS: Customer[] = [

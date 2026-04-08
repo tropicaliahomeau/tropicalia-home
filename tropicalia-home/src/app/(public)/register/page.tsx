@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import styles from './register.module.css';
+import { supabase } from '@/lib/supabaseClient';
 
 // Metadata removed because this is a client component
 
@@ -13,18 +14,43 @@ export default function RegisterPage() {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [hasAllergies, setHasAllergies] = useState<boolean | null>(null);
+    const [allergyDetails, setAllergyDetails] = useState('');
     const [referrerPhone, setReferrerPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (password !== confirmPassword) {
             alert("Passwords do not match!");
             return;
         }
+
+        if (hasAllergies === null) {
+            alert("Por favor indica si tienes alguna alergia (Módulo Obligatorio).");
+            return;
+        }
+
+        if (hasAllergies && !allergyDetails.trim()) {
+            alert("Please describe your allergies (max 5 words).");
+            return;
+        }
+
+        if (hasAllergies && allergyDetails.trim().split(/\s+/).length > 5) {
+            alert("Allergy description must be max 5 words.");
+            return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+            alert("Error registering: " + error.message);
+            return;
+        }
+
         const fullName = `${firstName} ${lastName}`;
-        register(fullName, email, phone, referrerPhone);
+        const finalAllergies = hasAllergies ? allergyDetails : "Ninguna";
+        register(fullName, email, phone, finalAllergies, referrerPhone);
     };
 
     return (
@@ -80,14 +106,54 @@ export default function RegisterPage() {
                             type="tel"
                             id="phone"
                             className={styles.input}
-                            placeholder="+1 (555) 000-0000"
+                            placeholder="04XX XXX XXX"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
                             required
                         />
                     </div>
 
-                    <div className={`${styles.inputGroup} mt-6 p-4 bg-gray-50 rounded-lg border border-dashed border-[#4A5D23]`}>
+                    {/* Allergy Module (Mandatory) */}
+                    <div className={`${styles.inputGroup} p-4 bg-orange-50 rounded-xl border border-orange-100 mb-6`}>
+                        <label className="block text-sm font-bold text-orange-800 mb-3">
+                            ⚠️ ¿Tienes alguna alergia? (Obligatorio)
+                        </label>
+                        <div className="flex gap-4 mb-3">
+                            <button
+                                type="button"
+                                onClick={() => { setHasAllergies(true); setAllergyDetails(''); }}
+                                className={`flex-1 py-2 rounded-lg font-bold transition-all border ${hasAllergies === true ? 'bg-orange-500 text-white border-orange-600 shadow-md' : 'bg-white text-gray-600 border-gray-200'}`}
+                            >
+                                SÍ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setHasAllergies(false); setAllergyDetails(''); }}
+                                className={`flex-1 py-2 rounded-lg font-bold transition-all border ${hasAllergies === false ? 'bg-gray-500 text-white border-gray-600 shadow-md' : 'bg-white text-gray-600 border-gray-200'}`}
+                            >
+                                NO
+                            </button>
+                        </div>
+
+                        {hasAllergies && (
+                            <div className="animate-fade-in">
+                                <label htmlFor="allergyDetails" className="block text-xs font-medium text-orange-700 mb-1">
+                                    Describe tu alergia (Máx 5 palabras):
+                                </label>
+                                <input
+                                    type="text"
+                                    id="allergyDetails"
+                                    className={`${styles.input} border-orange-200 focus:ring-orange-500`}
+                                    placeholder="Ex: Maní, Mariscos, Gluten"
+                                    value={allergyDetails}
+                                    onChange={(e) => setAllergyDetails(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={`${styles.inputGroup} p-4 bg-gray-50 rounded-lg border border-dashed border-[#4A5D23]`}>
                         <label htmlFor="referrer" className="block text-sm font-medium text-[#4A5D23] mb-1">
                             🎁 ¿Alguien te refirió? (Opcional)
                         </label>
@@ -138,7 +204,7 @@ export default function RegisterPage() {
                     </div>
 
                     <button type="submit" className={styles.button}>
-                        Create Account
+                        Registrarme
                     </button>
                 </form>
 

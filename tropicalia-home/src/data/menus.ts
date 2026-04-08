@@ -1,5 +1,5 @@
 export interface Meal {
-    id: number;
+    id: number | string;
     day: string;
     title: string;
     description: string;
@@ -7,6 +7,7 @@ export interface Meal {
     image: string;
     sides?: string[];
     dessert?: string;
+    price?: number;
 }
 
 export interface WeeklyMenu {
@@ -19,11 +20,11 @@ export interface WeeklyMenu {
 export const MENUS: WeeklyMenu[] = [
     {
         id: "week-1",
-        name: "Semana 1",
+        name: "Week 1",
         meals: [
             {
                 id: 101,
-                day: "Lunes",
+                day: "Monday",
                 title: "Juliana’s de pollo miel mostaza",
                 description: "Tiras de pollo en salsa miel mostaza acompañadas de arroz con fideos y vegetales salteados o al horno.",
                 tags: ["Pollo", "Agridulce"],
@@ -32,7 +33,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 102,
-                day: "Martes",
+                day: "Tuesday",
                 title: "Sopita de Lentejas & Carne Desmechada",
                 description: "Sopa de lentejas casera acompañada de carne desmechada, arroz, huevo frito y tajada de plátano maduro.",
                 tags: ["Tradicional", "Completo"],
@@ -41,7 +42,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 103,
-                day: "Miércoles",
+                day: "Wednesday",
                 title: "Albóndigas en Salsa de Mora",
                 description: "Albóndigas jugosas en salsa de mora servidas con puré de papa y vegetales al vapor con queso parmesano.",
                 tags: ["Gourmet", "Carne"],
@@ -50,7 +51,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 104,
-                day: "Jueves",
+                day: "Thursday",
                 title: "Frijoles Enchilados",
                 description: "Frijoles con toque picante servidos con arroz blanco, totopos, guacamole y pico de gallo.",
                 tags: ["Picante", "Mexicano"],
@@ -59,7 +60,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 105,
-                day: "Viernes",
+                day: "Friday",
                 title: "Sancocho Tradicional",
                 description: "Sopa de sancocho con carne, papa, yuca y plátano. Acompañado de arroz, salsa de ají y tajada de bocadillo con queso.",
                 tags: ["Sopa", "Típico"],
@@ -70,11 +71,11 @@ export const MENUS: WeeklyMenu[] = [
     },
     {
         id: "week-2",
-        name: "Semana 2",
+        name: "Week 2",
         meals: [
             {
                 id: 201,
-                day: "Lunes",
+                day: "Monday",
                 title: "Arroz con Pollo",
                 description: "Clásico arroz con pollo y verduras, servido con tajadas de plátano, salsa rosada y ensalada fresca.",
                 tags: ["Clásico", "Pollo"],
@@ -83,7 +84,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 202,
-                day: "Martes",
+                day: "Tuesday",
                 title: "Pasta Boloñesa",
                 description: "Pasta con salsa boloñesa casera acompañada de pan de ajo. Incluye postre.",
                 tags: ["Italiano", "Pasta"],
@@ -93,7 +94,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 203,
-                day: "Miércoles",
+                day: "Wednesday",
                 title: "Sudado de Pollo",
                 description: "Pollo sudado en salsa criolla servido con arroz con fideos y tajadas de plátano.",
                 tags: ["Casero", "Reconfortante"],
@@ -102,7 +103,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 204,
-                day: "Jueves",
+                day: "Thursday",
                 title: "Shepherd’s Pie Latino",
                 description: "Pastel de carne molida con verduras, cubierto con puré de coliflor y papa gratinado con queso. Acompañado de pan de ajo.",
                 tags: ["Gratinado", "Horneado"],
@@ -111,7 +112,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 205,
-                day: "Viernes",
+                day: "Friday",
                 title: "Chuletas Vallunas",
                 description: "Chuleta de cerdo apanada servida con arroz con cubitos de papa y ají de lulo.",
                 tags: ["Valluno", "Frito"],
@@ -122,11 +123,11 @@ export const MENUS: WeeklyMenu[] = [
     },
     {
         id: "week-3",
-        name: "Semana 3",
+        name: "Week 3",
         meals: [
             {
                 id: 301,
-                day: "Lunes",
+                day: "Monday",
                 title: "Ajiaco Santafereño",
                 description: "Sopa tradicional de ajiaco servida con pernil de pollo, arroz blanco y tajadas de plátano.",
                 tags: ["Sopa", "Bogotano"],
@@ -135,7 +136,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 302,
-                day: "Martes",
+                day: "Tuesday",
                 title: "Carne Desmechada & Patacones",
                 description: "Carne desmechada en su jugo servida con arroz de cilantro, patacones y guacamole.",
                 tags: ["Caribe", "Sabroso"],
@@ -144,7 +145,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 303,
-                day: "Miércoles",
+                day: "Wednesday",
                 title: "Pasta Penne al Pesto",
                 description: "Pasta penne con pollo en salsa pesto cremosa, acompañada de tostadas con ajo.",
                 tags: ["Internacional", "Pasta"],
@@ -153,7 +154,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 304,
-                day: "Jueves",
+                day: "Thursday",
                 title: "Fajitas de Carne",
                 description: "Fajitas de carne con pimentón y cebolla salteados, acompañadas de arroz con verduras y tortilla.",
                 tags: ["Tex-Mex", "Salteado"],
@@ -162,7 +163,7 @@ export const MENUS: WeeklyMenu[] = [
             },
             {
                 id: 305,
-                day: "Viernes",
+                day: "Friday",
                 title: "Frijolada Paisa",
                 description: "Sopita de frijol con arroz, maicitos, chicharrón, chorizo y maduro en cubitos. Incluye nachos de arepa.",
                 tags: ["Paisa", "Completo"],

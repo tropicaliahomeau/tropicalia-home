@@ -1,16 +1,15 @@
-
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 // Define User Types
-export type UserRole = "ADMIN" | "CLIENT";
+export type UserRole = "ADMIN" | "KITCHEN" | "STAFF" | "CUSTOMER";
 
 export interface Subscription {
-    status: 'active' | 'inactive' | 'pending';
+    status: 'active' | 'inactive' | 'pending' | 'Pending Validation' | 'Confirmed';
     planName: string;
-    meals: number[]; // IDs of selected meals
+    meals: any[]; // Changed from number[]
     extras?: { id: string; name: string; price: number; quantity: number }[];
     total?: number;
     paymentMethod?: 'auto' | 'payid';
@@ -26,16 +25,23 @@ export interface User {
     avatar?: string;
     subscription?: Subscription;
     referralCount?: number;
+    allergies?: string;
 }
 
 // Define Order Interface
 export interface Order {
-    id: number;
+    id: string;
     customer: string;
     meal: string;
     status: string;
-    customerId?: string; // Link to user ID
+    customerId?: string;
+    phone?: string;
     isNotified?: boolean;
+    date?: string;
+    total?: number;
+    lunchTotal?: number;
+    extrasTotal?: number;
+    payIdProof?: string | null;
 }
 
 interface UserContextType {
@@ -43,11 +49,21 @@ interface UserContextType {
     isLoading: boolean;
     login: (email: string, role: UserRole) => void;
     logout: () => void;
-    register: (name: string, email: string, phone: string, referrerPhone?: string) => void;
+    register: (name: string, email: string, phone: string, allergies: string, referrerPhone?: string) => void;
     updateSubscription: (subscription: Subscription) => void;
     allOrders: Order[];
-    updateIsNotified: (id: number) => void;
-    updateOrderStatus: (id: number, status: string) => void;
+    updateIsNotified: (id: string) => void;
+    updateOrderStatus: (id: string, status: string) => void;
+    cart: {
+        meals: any[];
+        extras: { id: string; name: string; price: number; quantity: number }[];
+    };
+    addToCart: (type: 'meal' | 'extra', item: any) => void;
+    removeFromCart: (type: 'meal' | 'extra', id: string | number) => void;
+    updateCartExtraQuantity: (id: string, change: number) => void;
+    clearCart: () => void;
+    isCartOpen: boolean;
+    setIsCartOpen: (open: boolean) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -74,7 +90,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (storedUser) {
             try {
                 const parsedUser: User = JSON.parse(storedUser);
-                // Refresh referral count from storage
                 parsedUser.referralCount = getReferralCount(parsedUser.phone);
                 setUser(parsedUser);
             } catch (e) {
@@ -82,55 +97,72 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 localStorage.removeItem("tropicalia_user");
             }
         }
+
+        // Load existing orders
+        const storedOrders = localStorage.getItem("tropicalia_orders");
+        if (storedOrders) {
+            try {
+                const parsedOrders: Order[] = JSON.parse(storedOrders);
+                setAllOrders(parsedOrders);
+            } catch (e) {
+                console.error("Failed to parse orders data", e);
+            }
+        }
+
         setIsLoading(false);
     }, []);
 
     const login = (email: string, role: UserRole) => {
         setIsLoading(true);
-        // Simulate API call
         setTimeout(() => {
-            // In a real app we would look up the user. 
-            // Here we just mock it, but if we can find a phone stored previously for this email in a "mock db" we would use it.
-            // For now, prompt the user if needed or just use a dummy phone if not provided, 
-            // but the login signature doesn't take phone.
-            // We'll just set referralCount to 0 for this mock login unless we had it.
-
-            const mockUser: User = {
-                id: Math.random().toString(36).substr(2, 9),
-                name: email.split("@")[0],
-                email,
-                role,
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-                // Default no subscription
-                referralCount: 0
-            };
-
-            // If we have the user in local storage already, try to preserve their phone to show referrals
-            const existing = localStorage.getItem("tropicalia_user");
-            if (existing) {
-                const parsed = JSON.parse(existing);
-                if (parsed.email === email) {
-                    mockUser.phone = parsed.phone;
-                    mockUser.referralCount = getReferralCount(parsed.phone);
-                }
+            if (role === "ADMIN" || email === "tropicaliahome.au@gmail.com") {
+                const mockUser: User = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: "Admin",
+                    email,
+                    role: "ADMIN",
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+                    referralCount: 0
+                };
+                setUser(mockUser);
+                localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
+                setIsLoading(false);
+                router.push('/admin/dashboard');
+                return;
             }
 
-            setUser(mockUser);
-            localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
+            const allUsersJson = localStorage.getItem("tropicalia_all_users") || "[]";
+            const allUsers = JSON.parse(allUsersJson);
+            const existingUser = allUsers.find((u: any) => u.email === email);
+
+            if (!existingUser) {
+                // If authenticated by Supabase but not in mock localstorage, create them!
+                const newProfile: User = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: email.split('@')[0],
+                    email: email,
+                    role: "CUSTOMER"
+                };
+                allUsers.push(newProfile);
+                localStorage.setItem("tropicalia_all_users", JSON.stringify(allUsers));
+                setUser(newProfile);
+                localStorage.setItem("tropicalia_user", JSON.stringify(newProfile));
+                setIsLoading(false);
+                router.push('/dashboard');
+                return;
+            }
+
+            existingUser.referralCount = getReferralCount(existingUser.phone);
+            setUser(existingUser);
+            localStorage.setItem("tropicalia_user", JSON.stringify(existingUser));
             setIsLoading(false);
-
-            // Redirect based on role
-            if (role === 'ADMIN') router.push('/admin/dashboard');
-            else router.push('/dashboard'); // Client dashboard
-
+            router.push('/dashboard');
         }, 800);
     };
 
-    const register = (name: string, email: string, phone: string, referrerPhone?: string) => {
+    const register = (name: string, email: string, phone: string, allergies: string, referrerPhone?: string) => {
         setIsLoading(true);
-        // Simulate API call
         setTimeout(() => {
-            // Handle Referral Logic
             if (referrerPhone) {
                 try {
                     const referrals = JSON.parse(localStorage.getItem("tropicalia_referrals") || "{}");
@@ -146,37 +178,51 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: name,
                 email,
                 phone,
-                role: "CLIENT", // Default role
+                allergies,
+                role: "CUSTOMER",
                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-                referralCount: 0 // New users start with 0
+                referralCount: 0
             };
 
             setUser(mockUser);
             localStorage.setItem("tropicalia_user", JSON.stringify(mockUser));
+
+            try {
+                const allUsersJson = localStorage.getItem("tropicalia_all_users") || "[]";
+                const allUsers = JSON.parse(allUsersJson);
+                const existingIndex = allUsers.findIndex((u: any) => u.email === email);
+                if (existingIndex > -1) {
+                    allUsers[existingIndex] = mockUser;
+                } else {
+                    allUsers.push(mockUser);
+                }
+                localStorage.setItem("tropicalia_all_users", JSON.stringify(allUsers));
+            } catch (e) { }
+
             setIsLoading(false);
             router.push('/dashboard');
         }, 1000);
     }
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            const { supabase } = await import('@/lib/supabaseClient');
+            await supabase.auth.signOut();
+        } catch (e) { console.error(e); }
         setUser(null);
         localStorage.removeItem("tropicalia_user");
-        router.push("/");
+        router.push("/login");
     };
 
-    const [allOrders, setAllOrders] = useState<Order[]>([
-        { id: 1, customer: "João Silva", meal: "Feijoada Completa", status: "Pending", customerId: "client1" },
-        { id: 2, customer: "Maria Souza", meal: "Grilled Chicken Salad", status: "Ready", customerId: "client2" },
-        { id: 3, customer: "Pedro Santos", meal: "Fish Tacos", status: "Pending", customerId: "client3" },
-    ]);
+    const [allOrders, setAllOrders] = useState<Order[]>([]);
 
-    const updateOrderStatus = (id: number, status: string) => {
+    const updateOrderStatus = (id: string, status: string) => {
         setAllOrders(prev => prev.map(order =>
             order.id === id ? { ...order, status } : order
         ));
     };
 
-    const updateIsNotified = (id: number) => {
+    const updateIsNotified = (id: string) => {
         setAllOrders(prev => prev.map(order =>
             order.id === id ? { ...order, isNotified: true } : order
         ));
@@ -184,19 +230,148 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const updateSubscription = (subscription: Subscription) => {
         if (!user) return;
-        const updatedUser = { ...user, subscription };
-        setUser(updatedUser);
-        localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
+        let finalSubscription = { ...subscription };
 
-        // Mock creating a new order based on subscription
+        if (user.referralCount && user.referralCount >= 5) {
+            finalSubscription.total = 0;
+            finalSubscription.planName = `🎁 FREE WEEK! (${subscription.planName})`;
+
+            const updatedUser = { ...user, referralCount: 0, subscription: finalSubscription };
+            try {
+                const referrals = JSON.parse(localStorage.getItem("tropicalia_referrals") || "{}");
+                if (user.phone) {
+                    referrals[user.phone] = 0;
+                    localStorage.setItem("tropicalia_referrals", JSON.stringify(referrals));
+                }
+            } catch (e) { }
+
+            setUser(updatedUser);
+            localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
+            alert("✅ CONGRATULATIONS! You have unlocked your FREE WEEK for bringing 5 friends. This order has a 100% discount.");
+        } else {
+            const updatedUser = { ...user, subscription: finalSubscription };
+            setUser(updatedUser);
+            localStorage.setItem("tropicalia_user", JSON.stringify(updatedUser));
+        }
+
+        const orderId = `TH-${Math.floor(1000 + Math.random() * 9000)}`;
+        const extrasTotal = subscription.extras?.reduce((sum, e) => sum + (e.price * e.quantity), 0) || 0;
+        const mainLunchTotal = (subscription.total || 0) - extrasTotal;
+
         const newOrder: Order = {
-            id: allOrders.length + 1,
+            id: orderId,
             customer: user.name,
-            meal: "Chef's Special (Subscription)",
+            phone: user.phone || 'N/A',
+            meal: subscription.planName,
             status: "Pending",
-            customerId: user.id
+            customerId: user.id,
+            date: new Date().toISOString().split('T')[0],
+            total: subscription.total,
+            lunchTotal: mainLunchTotal,
+            extrasTotal: extrasTotal,
+            payIdProof: subscription.payIdProof
         };
-        setAllOrders(prev => [...prev, newOrder]);
+
+        try {
+            // Send to Supabase
+            fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    status: "Pending Validation",
+                    total: subscription.total,
+                    paymentMethod: subscription.paymentMethod || 'payid',
+                    cart: cart
+                })
+            }).then(res => res.json()).then(data => {
+                console.log("Order saved to Supabase", data);
+            }).catch(e => console.error("Failed to save to Supabase", e));
+
+            const finalSubscriptionWithId = { ...finalSubscription, orderId };
+            const updatedUserFinal = { ...user, subscription: finalSubscriptionWithId };
+            setUser(updatedUserFinal);
+            localStorage.setItem("tropicalia_user", JSON.stringify(updatedUserFinal));
+
+            setAllOrders(prev => {
+                const updated = [...prev, newOrder];
+                try {
+                    localStorage.setItem("tropicalia_orders", JSON.stringify(updated));
+                } catch (e) {
+                    console.error("Storage limit exceeded for orders:", e);
+                }
+                return updated;
+            });
+        } catch (e) {
+            console.error("Critical Storage Error:", e);
+            alert("⚠️ Storage Error: Browser cache is full. Please clear it and try again.");
+        }
+    };
+
+    // Cart State
+    const [cart, setCart] = useState<{
+        meals: any[];
+        extras: { id: string; name: string; price: number; quantity: number }[];
+    }>({
+        meals: [],
+        extras: []
+    });
+    const [isCartOpen, setIsCartOpen] = useState(false);
+
+    const addToCart = (type: 'meal' | 'extra', item: any) => {
+        if (type === 'meal') {
+            setCart(prev => ({
+                ...prev,
+                meals: prev.meals.some((m: any) => m.id === item.id) ? prev.meals : [...prev.meals, item]
+            }));
+        } else {
+            setCart(prev => {
+                const existing = prev.extras.find(e => e.id === item.id);
+                if (existing) {
+                    return {
+                        ...prev,
+                        extras: prev.extras.map(e => e.id === item.id ? { ...e, quantity: e.quantity + 1 } : e)
+                    };
+                }
+                return {
+                    ...prev,
+                    extras: [...prev.extras, { ...item, quantity: 1 }]
+                };
+            });
+        }
+    };
+
+    const removeFromCart = (type: 'meal' | 'extra', id: string | number) => {
+        if (type === 'meal') {
+            setCart(prev => ({
+                ...prev,
+                meals: prev.meals.filter((m: any) => m.id !== id)
+            }));
+        } else {
+            setCart(prev => ({
+                ...prev,
+                extras: prev.extras.filter(e => e.id !== id)
+            }));
+        }
+    };
+
+    const updateCartExtraQuantity = (id: string, change: number) => {
+        setCart(prev => ({
+            ...prev,
+            extras: prev.extras.map(e => {
+                if (e.id === id) {
+                    const newQty = Math.max(0, e.quantity + change);
+                    return { ...e, quantity: newQty };
+                }
+                return e;
+            }).filter(e => e.quantity > 0)
+        }));
+    };
+
+    const clearCart = () => {
+        setCart({ meals: [], extras: [] });
     };
 
     return (
@@ -209,7 +384,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
             updateSubscription,
             allOrders,
             updateIsNotified,
-            updateOrderStatus
+            updateOrderStatus,
+            cart,
+            addToCart,
+            removeFromCart,
+            updateCartExtraQuantity,
+            clearCart,
+            isCartOpen,
+            setIsCartOpen
         }}>
             {children}
         </UserContext.Provider>
