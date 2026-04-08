@@ -9,7 +9,7 @@ import { MENUS } from '@/data/menus';
 export default function KitchenDashboard() {
     const [orders, setOrders] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [weekMap, setWeekMap] = useState<Record<number, string>>({});
+    const [weekMap, setWeekMap] = useState<Record<string, string>>({});
     const [menuMap, setMenuMap] = useState<Record<string, string>>({});
     const [isSundayReset, setIsSundayReset] = useState(false);
 
@@ -38,9 +38,9 @@ export default function KitchenDashboard() {
                         .eq('weekly_menu_id', activeWeekId);
                         
                     if (weekItems) {
-                        const map: Record<number, string> = {};
+                        const map: Record<string, string> = {};
                         weekItems.forEach((wi: any) => {
-                            map[wi.menu_item_id] = wi.dia;
+                            map[String(wi.menu_item_id)] = wi.dia;
                         });
                         setWeekMap(map);
                     }
@@ -131,7 +131,7 @@ export default function KitchenDashboard() {
                                     const count = isSundayReset ? 0 : orders.reduce((sum, o) => {
                                         if (o.estado !== 'preparando') return sum;
                                         return sum + (o.order_items || []).reduce((itemSum: number, i: any) => {
-                                            const itemDay = weekMap[i.menu_item_id];
+                                            const itemDay = weekMap[String(i.menu_item_id)];
                                             if (itemDay === spanishDay) {
                                                 return itemSum + (i.cantidad || 1);
                                             }
@@ -287,13 +287,20 @@ export default function KitchenDashboard() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="lg:col-span-2 flex flex-col gap-2 justify-end">
-                                        <button
-                                            onClick={() => changeStatus(order.id, 'picked_up')}
-                                            className="w-full lg:w-fit px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 bg-[#4A5D23] text-white shadow-md hover:bg-[#3a491c]"
-                                        >
-                                            Picked Up ✓
-                                        </button>
+                                    <div className="lg:col-span-2 flex flex-col items-center lg:items-end justify-center gap-2">
+                                        {order.estado === 'preparando' && (
+                                            <>
+                                                <span className="inline-block bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-md font-black uppercase tracking-wider border border-yellow-200">
+                                                    Preparing
+                                                </span>
+                                                <button
+                                                    onClick={() => changeStatus(order.id, 'picked_up')}
+                                                    className="w-full lg:w-fit px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-[#4A5D23] text-white shadow-md hover:bg-[#3a491c]"
+                                                >
+                                                    Mark as Picked Up ✓
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
