@@ -90,18 +90,27 @@ export default function KitchenDashboard() {
         return () => clearInterval(interval);
     }, []);
 
-    const changeStatus = async (orderId: number, newStatus: string) => {
+    const changeStatus = async (orderId: number) => {
         try {
-            await supabase.from('orders').update({ estado: newStatus }).eq('id', orderId);
-            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: newStatus } : o));
-            alert('Order marked as picked up ✓');
+            // Set temporary state for animation
+            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: 'picking_up' } : o));
+            
+            // Update Supabase in background
+            await supabase.from('orders').update({ estado: 'picked_up' }).eq('id', orderId);
+            
+            // Remove after 1 second
+            setTimeout(() => {
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, estado: 'picked_up' } : o));
+            }, 1000);
         } catch (e) {
             console.error('Failed to change status', e);
+            // Revert on error
+            setOrders(orders.map(o => o.id === orderId ? { ...o, estado: 'preparando' } : o));
         }
     };
 
     const filteredOrders = orders.filter(order =>
-        order.estado === 'preparando' && (
+        (order.estado === 'preparando' || order.estado === 'picking_up') && (
             (order.telefono || '').includes(searchTerm) ||
             (order.nombre_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.id || '').toString().includes(searchTerm)
@@ -132,7 +141,14 @@ export default function KitchenDashboard() {
                                         if (o.estado !== 'preparando') return sum;
                                         return sum + (o.order_items || []).reduce((itemSum: number, i: any) => {
                                             const itemDay = weekMap[String(i.menu_item_id)];
-                                            if (itemDay === spanishDay) {
+                                            if (!itemDay) return itemSum;
+                                            
+                                            const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                            const normItemDay = normalize(itemDay);
+                                            const normSpanishDay = normalize(spanishDay);
+                                            const normDay = normalize(day);
+
+                                            if (normItemDay === normSpanishDay || normItemDay === normDay) {
                                                 return itemSum + (i.cantidad || 1);
                                             }
                                             return itemSum;
@@ -288,18 +304,18 @@ export default function KitchenDashboard() {
 
                                     {/* Actions */}
                                     <div className="lg:col-span-2 flex flex-col items-center lg:items-end justify-center gap-2">
-                                        {order.estado === 'preparando' && (
-                                            <>
-                                                <span className="inline-block bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-md font-black uppercase tracking-wider border border-yellow-200">
-                                                    Preparing
-                                                </span>
-                                                <button
-                                                    onClick={() => changeStatus(order.id, 'picked_up')}
-                                                    className="w-full lg:w-fit px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-[#4A5D23] text-white shadow-md hover:bg-[#3a491c]"
-                                                >
-                                                    Mark as Picked Up ✓
-                                                </button>
-                                            </>
+                                        {(order.estado === 'preparando' || order.estado === 'picking_up') && (
+                                            <button
+                                                onClick={() => order.estado === 'preparando' && changeStatus(order.id)}
+                                                disabled={order.estado === 'picking_up'}
+                                                className={`w-full lg:w-fit px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                                                    order.estado === 'picking_up' 
+                                                    ? 'bg-green-500 text-white shadow-md' 
+                                                    : 'bg-[#ffc107] text-yellow-900 shadow-md hover:bg-[#ffb300] active:scale-95'
+                                                }`}
+                                            >
+                                                {order.estado === 'picking_up' ? 'Picked Up ✓' : 'Preparing'}
+                                            </button>
                                         )}
                                     </div>
                                 </div>
