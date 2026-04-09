@@ -24,32 +24,22 @@ export default function KitchenDashboard() {
                 const isReset = sydneyTime.getDay() === 0 && sydneyTime.getHours() >= 21;
                 setIsSundayReset(isReset);
 
-                // Fetch active week map
-                const { data: activeWeekArr } = await supabase
-                    .from('weekly_menus')
-                    .select('id')
-                    .eq('is_enabled', true)
-                    .limit(1);
-                
-                if (activeWeekArr && activeWeekArr.length > 0) {
-                    const activeWeekId = activeWeekArr[0].id;
-                    const { data: weekItems } = await supabase
-                        .from('weekly_menu_items')
-                        .select('menu_item_id, dia, menu_items(id, nombre)')
-                        .eq('weekly_menu_id', activeWeekId);
-                        
-                    if (weekItems) {
-                        const map: Record<string, string> = {};
-                        weekItems.forEach((wi: any) => {
-                            const item = Array.isArray(wi.menu_items) ? wi.menu_items[0] : wi.menu_items;
-                            map[String(wi.menu_item_id)] = wi.dia;
-                            if (item && item.nombre) {
-                                map[item.nombre] = wi.dia;
-                            }
-                        });
-                        setWeekMap(map);
-                        console.log('WEEKMAP:', JSON.stringify(map));
-                    }
+                // Fetch all week items for weekMap
+                const { data: weekItems } = await supabase
+                    .from('weekly_menu_items')
+                    .select('menu_item_id, dia, menu_items(id, nombre)');
+                    
+                if (weekItems) {
+                    const map: Record<string, string> = {};
+                    weekItems.forEach((wi: any) => {
+                        const item = Array.isArray(wi.menu_items) ? wi.menu_items[0] : wi.menu_items;
+                        map[String(wi.menu_item_id)] = wi.dia;
+                        if (item && item.nombre) {
+                            map[item.nombre] = wi.dia;
+                        }
+                    });
+                    setWeekMap(map);
+                    console.log('WEEKMAP:', JSON.stringify(map));
                 }
 
                 // Fetch all menu items mapping
