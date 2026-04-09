@@ -11,6 +11,7 @@ export default function KitchenDashboard() {
     const [searchTerm, setSearchTerm] = useState('');
     const [weekMap, setWeekMap] = useState<Record<string, string>>({});
     const [menuMap, setMenuMap] = useState<Record<string, string>>({});
+    const [menuNameMap, setMenuNameMap] = useState<Record<string, string>>({});
     const [isSundayReset, setIsSundayReset] = useState(false);
 
     useEffect(() => {
@@ -57,6 +58,7 @@ export default function KitchenDashboard() {
                     allMenuItems.forEach((item: any) => { tempMenuMap[item.id] = item.nombre; });
                 }
                 MENUS.forEach(w => w.meals.forEach(m => { tempMenuMap[m.id as string] = m.title; }));
+                setMenuNameMap(tempMenuMap);
                 const hardcodedExtras = [
                     { id: '1', name: 'Pony Malta' },
                     { id: '2', name: 'Colombiana' },
@@ -139,8 +141,8 @@ export default function KitchenDashboard() {
                                     const count = isSundayReset ? 0 : orders.reduce((sum, o) => {
                                         if (o.estado !== 'preparando') return sum;
                                         return sum + (o.order_items || []).reduce((itemSum: number, i: any) => {
-                                            const itemName = menuMap[String(i.menu_item_id)];
-                                            const itemDay = weekMap[String(i.menu_item_id)] || (itemName && weekMap[itemName]) || weekMap[i.nombre] || weekMap[i.menu_items?.nombre];
+                                            const mealName = menuNameMap[String(i.menu_item_id)] || i.nombre || i.menu_items?.nombre || '';
+                                            const itemDay = weekMap[String(i.menu_item_id)] || weekMap[mealName];
                                             if (!itemDay) return itemSum;
                                             
                                             const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
