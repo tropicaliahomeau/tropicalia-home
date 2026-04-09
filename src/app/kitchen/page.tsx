@@ -48,6 +48,7 @@ export default function KitchenDashboard() {
                             }
                         });
                         setWeekMap(map);
+                        console.log('WEEKMAP:', JSON.stringify(map));
                     }
                 }
 
@@ -59,6 +60,7 @@ export default function KitchenDashboard() {
                 }
                 MENUS.forEach(w => w.meals.forEach(m => { tempMenuMap[m.id as string] = m.title; }));
                 setMenuNameMap(tempMenuMap);
+                console.log('MENUNAMEMAP:', JSON.stringify(tempMenuMap));
                 const hardcodedExtras = [
                     { id: '1', name: 'Pony Malta' },
                     { id: '2', name: 'Colombiana' },
