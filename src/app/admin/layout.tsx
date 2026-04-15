@@ -7,11 +7,32 @@ import PasswordGate from '@/components/PasswordGate';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsSidebarOpen(false);
+    }, [pathname]);
 
     return (
         <PasswordGate area="admin">
             <div className="flex min-h-screen bg-gray-50">
-                <aside className="w-64 fixed h-full bg-white border-r border-gray-200 p-6 z-[60]">
+                {/* Mobile Hamburger Button */}
+                <button
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="md:hidden fixed top-4 right-4 z-[70] p-3 bg-white rounded-xl shadow-md text-gray-800"
+                >
+                    ☰
+                </button>
+
+                {/* Mobile Overlay */}
+                {isSidebarOpen && (
+                    <div 
+                        className="md:hidden fixed inset-0 bg-black/50 z-[50]"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+
+                <aside className={`w-64 fixed h-full bg-white border-r border-gray-200 p-6 z-[60] transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
                     <div className="mb-10 flex items-center gap-2">
                         <div className="w-8 h-8 bg-[#4A5D23] rounded-full flex items-center justify-center text-white font-bold">
                             T
@@ -46,7 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </button>
                     </div>
                 </aside>
-                <main className="flex-1 ml-64 p-8">
+                <main className="flex-1 md:ml-64 p-4 md:p-8 pt-20 md:pt-8 w-full overflow-x-hidden">
                     {children}
                 </main>
             </div>

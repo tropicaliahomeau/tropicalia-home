@@ -18,8 +18,8 @@ export default function DashboardPage() {
     const [activeTab, setActiveTab] = React.useState<'hoy' | 'macro'>('hoy');
     const [selectedProof, setSelectedProof] = React.useState<string | null>(null);
     const [showExpensesModal, setShowExpensesModal] = React.useState(false);
-    const [tempExpenses, setTempExpenses] = React.useState<{ reason: string, amount: string }[]>(
-        Array(5).fill({ reason: '', amount: '' })
+    const [tempExpenses, setTempExpenses] = React.useState<{ reason: string, supplier: string, amount: string }[]>(
+        Array(5).fill({ reason: '', supplier: '', amount: '' })
     );
     const [detailModal, setDetailModal] = React.useState<{ show: boolean, type: 'ingresos' | 'gastos', data: any[] }>({
         show: false,
@@ -52,8 +52,8 @@ export default function DashboardPage() {
                 const { data: dbOrders, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
                 const orders = dbOrders || [];
 
-                const expensesJson = localStorage.getItem("tropicalia_expenses") || "[]";
-                const expenses = JSON.parse(expensesJson);
+                const { data: dbExpenses } = await supabase.from('expenses').select('*');
+                const expenses = dbExpenses || [];
 
                 const customers = users.filter((u: any) => u.role === 'CUSTOMER');
                 const allergicList = customers.filter((u: any) => u.allergies && u.allergies !== "Ninguna" && u.allergies !== "N/A");
@@ -119,19 +119,32 @@ export default function DashboardPage() {
     };
 
     const addExpenseRow = () => {
-        setTempExpenses([...tempExpenses, { reason: '', amount: '' }]);
+        setTempExpenses([...tempExpenses, { reason: '', supplier: '', amount: '' }]);
     };
 
-    const handleExpenseChange = (index: number, field: 'reason' | 'amount', value: string) => {
+    const handleExpenseChange = (index: number, field: 'reason' | 'supplier' | 'amount', value: string) => {
         const updated = [...tempExpenses];
         updated[index] = { ...updated[index], [field]: value };
         setTempExpenses(updated);
     };
 
-    const saveExpenses = () => {
-        const validExpenses = tempExpenses.filter(e => e.reason && e.amount);
-        const saved = JSON.parse(localStorage.getItem('tropicalia_expenses') || '[]');
-        localStorage.setItem('tropicalia_expenses', JSON.stringify([...saved, ...validExpenses.map(e => ({ ...e, amount: parseFloat(e.amount), date: new Date().toISOString() }))]));
+    const saveExpenses = async () => {
+        const validExpenses = tempExpenses.filter(e => e.reason && e.supplier && e.amount);
+        if (validExpenses.length > 0) {
+            const formattedExpenses = validExpenses.map(e => ({
+                reason: e.reason,
+                supplier: e.supplier,
+                amount: parseFloat(e.amount),
+                date: new Date().toISOString()
+            }));
+
+            const { error } = await supabase.from('expenses').insert(formattedExpenses);
+            if (error) {
+                console.error("Error guardando gastos en Supabase:", error);
+                alert("Error al guardar gastos.");
+                return;
+            }
+        }
         setShowExpensesModal(false);
         window.location.reload();
     };
@@ -293,11 +306,11 @@ export default function DashboardPage() {
                             <div className="flex justify-between items-start mb-2">
                                 <p className="text-[10px] font-black text-gray-400 uppercase">Gastos (Est.)</p>
                                 <button
-                                    onClick={() => {
-                                        const expenses = JSON.parse(localStorage.getItem("tropicalia_expenses") || "[]");
-                                        setDetailModal({ show: true, type: 'gastos', data: expenses });
+                                    onClick={async () => {
+                                        const { data: expenses } = await supabase.from('expenses').select('*');
+                                        setDetailModal({ show: true, type: 'gastos', data: expenses || [] });
                                     }}
-                                    className="text-[9px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-lg font-bold text-gray-600 transition-all"
+                                    className="text-[9px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-lg font-bold text-[#1a1a1a] transition-all"
                                 >
                                     Ver Detalle
                                 </button>
@@ -417,14 +430,21 @@ export default function DashboardPage() {
                                         placeholder="Motivo..."
                                         value={exp.reason}
                                         onChange={(e) => handleExpenseChange(idx, 'reason', e.target.value)}
-                                        className="flex-1 bg-gray-50 border-none rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-[#4A5D23] transition-all"
+                                        className="flex-[2] bg-white border border-gray-300 rounded-xl p-3 text-sm font-bold text-[#1a1a1a] placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A5D23] transition-all outline-none"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Proveedor..."
+                                        value={exp.supplier}
+                                        onChange={(e) => handleExpenseChange(idx, 'supplier', e.target.value)}
+                                        className="flex-[1.5] bg-white border border-gray-300 rounded-xl p-3 text-sm font-bold text-[#1a1a1a] placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A5D23] transition-all outline-none"
                                     />
                                     <input
                                         type="number"
-                                        placeholder="$"
+                                        placeholder="$ Valor"
                                         value={exp.amount}
                                         onChange={(e) => handleExpenseChange(idx, 'amount', e.target.value)}
-                                        className="w-24 bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-red-600 focus:ring-2 focus:ring-[#4A5D23] transition-all"
+                                        className="flex-1 bg-white border border-gray-300 rounded-xl p-3 text-sm font-bold text-[#1a1a1a] placeholder:text-gray-400 focus:ring-2 focus:ring-[#4A5D23] transition-all outline-none"
                                     />
                                 </div>
                             ))}

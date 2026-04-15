@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
+import { supabase } from '@/lib/supabaseClient';
+
 interface Expense {
+    id?: string;
     reason: string;
+    supplier?: string;
     amount: number;
     date: string;
 }
@@ -15,12 +19,14 @@ export default function AdminFinance() {
     const [editValue, setEditValue] = useState<Expense | null>(null);
 
     useEffect(() => {
-        const loadExpenses = () => {
+        const loadExpenses = async () => {
             try {
-                const saved = JSON.parse(localStorage.getItem('tropicalia_expenses') || '[]');
-                // Sort by date descending
-                const sorted = saved.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                setExpenses(sorted);
+                const { data: dbExpenses, error } = await supabase.from('expenses').select('*').order('date', { ascending: false });
+                if (error) {
+                    console.error("Error loading expenses from Supabase", error);
+                    return;
+                }
+                setExpenses(dbExpenses || []);
             } catch (error) {
                 console.error("Failed to load expenses", error);
             } finally {
@@ -30,11 +36,14 @@ export default function AdminFinance() {
         loadExpenses();
     }, []);
 
-    const handleDelete = (index: number) => {
+    const handleDelete = async (index: number) => {
         if (confirm('¿Estás seguro de que deseas eliminar este gasto?')) {
+            const expToDelete = expenses[index];
+            if (expToDelete.id) {
+                await supabase.from('expenses').delete().eq('id', expToDelete.id);
+            }
             const updated = expenses.filter((_, i) => i !== index);
             setExpenses(updated);
-            localStorage.setItem('tropicalia_expenses', JSON.stringify(updated));
         }
     };
 
@@ -43,12 +52,18 @@ export default function AdminFinance() {
         setEditValue(expenses[index]);
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = async () => {
         if (editIndex !== null && editValue) {
+            if (editValue.id) {
+                await supabase.from('expenses').update({
+                    reason: editValue.reason,
+                    supplier: editValue.supplier,
+                    amount: editValue.amount
+                }).eq('id', editValue.id);
+            }
             const updated = [...expenses];
             updated[editIndex] = editValue;
             setExpenses(updated);
-            localStorage.setItem('tropicalia_expenses', JSON.stringify(updated));
             setEditIndex(null);
             setEditValue(null);
         }
@@ -74,10 +89,11 @@ export default function AdminFinance() {
                     <table className="min-w-full divide-y divide-gray-100">
                         <thead>
                             <tr className="bg-gray-50/50">
-                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</th>
-                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Concepto / Motivo</th>
-                                <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto</th>
-                                <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Acciones</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest">Fecha</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest">Concepto / Motivo</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest">Proveedor</th>
+                                <th className="px-8 py-5 text-right text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest">Monto</th>
+                                <th className="px-8 py-5 text-right text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -100,7 +116,7 @@ export default function AdminFinance() {
                                 expenses.map((expense, idx) => (
                                     <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
                                         <td className="px-8 py-5 whitespace-nowrap">
-                                            <span className="text-sm font-bold text-gray-500">
+                                            <span className="text-sm font-bold text-[#1a1a1a]">
                                                 {new Date(expense.date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                             </span>
                                         </td>
@@ -108,19 +124,31 @@ export default function AdminFinance() {
                                             {editIndex === idx ? (
                                                 <input
                                                     type="text"
-                                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold focus:ring-2 focus:ring-[#4A5D23]/10 outline-none"
+                                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-bold text-[#1a1a1a] focus:ring-2 focus:ring-[#4A5D23]/10 outline-none"
                                                     value={editValue?.reason}
                                                     onChange={(e) => setEditValue({ ...editValue!, reason: e.target.value })}
                                                 />
                                             ) : (
-                                                <span className="text-sm font-black text-gray-800 uppercase tracking-tight">{expense.reason}</span>
+                                                <span className="text-sm font-black text-[#1a1a1a] uppercase tracking-tight">{expense.reason}</span>
+                                            )}
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            {editIndex === idx ? (
+                                                <input
+                                                    type="text"
+                                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-bold text-[#1a1a1a] focus:ring-2 focus:ring-[#4A5D23]/10 outline-none"
+                                                    value={editValue?.supplier || ''}
+                                                    onChange={(e) => setEditValue({ ...editValue!, supplier: e.target.value })}
+                                                />
+                                            ) : (
+                                                <span className="text-sm font-bold text-[#1a1a1a]">{expense.supplier || '-'}</span>
                                             )}
                                         </td>
                                         <td className="px-8 py-5 text-right">
                                             {editIndex === idx ? (
                                                 <input
                                                     type="number"
-                                                    className="w-32 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-black text-red-600 text-right focus:ring-2 focus:ring-[#4A5D23]/10 outline-none"
+                                                    className="w-32 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-black text-[#1a1a1a] text-right focus:ring-2 focus:ring-[#4A5D23]/10 outline-none"
                                                     value={editValue?.amount}
                                                     onChange={(e) => setEditValue({ ...editValue!, amount: parseFloat(e.target.value) })}
                                                 />
