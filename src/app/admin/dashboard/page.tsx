@@ -63,25 +63,10 @@ export default function DashboardPage() {
                 const totalExp = expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
                 const delivered = orders.filter((o: any) => o.estado === 'entregado' || o.estado === 'Delivered').length;
-                const pending = orders.filter((o: any) => ['pendiente', 'Pending', 'preparando', 'Preparing', 'Ready'].includes(o.estado)).length;
-
-                // Filter for Today and "preparando" status
-                const isToday = (dateStr: string) => {
-                    if (!dateStr) return false;
-                    const d = new Date(dateStr);
-                    const today = new Date();
-                    return d.getDate() === today.getDate() &&
-                           d.getMonth() === today.getMonth() &&
-                           d.getFullYear() === today.getFullYear();
-                };
-
-                const todayPreparingOrders = orders.filter((o: any) => 
-                    isToday(o.created_at) && 
-                    o.estado?.toLowerCase() === 'preparando'
-                );
+                const pending = orders.filter((o: any) => o.estado?.toLowerCase() === 'preparando').length;
 
                 setRealKpis({
-                    totalOrders: todayPreparingOrders.length,
+                    totalOrders: orders.length,
                     deliveredOrders: delivered,
                     pendingOrders: pending,
                     activeCustomers: customers.length,
@@ -99,7 +84,7 @@ export default function DashboardPage() {
                     { name: 'Gastos', valor: totalExp || (revenue * 0.35), fill: '#ef4444' }
                 ]);
 
-                setRecentOrders(todayPreparingOrders.slice(0, 10));
+                setRecentOrders(orders.slice(0, 10));
         } catch (e) {
             console.error("Dashboard Sync Error:", e);
         }
