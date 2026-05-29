@@ -47,7 +47,6 @@ export default function DashboardPage() {
             try {
                 const usersJson = localStorage.getItem("tropicalia_all_users") || "[]";
                 const users = JSON.parse(usersJson);
-                
                 // Fetch orders from Supabase
                 const { data: dbOrders, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
                 const orders = dbOrders || [];
@@ -63,29 +62,44 @@ export default function DashboardPage() {
                 const extraRev = orders.reduce((sum: number, o: any) => sum + (Number(o.extrasTotal) || 0), 0);
                 const totalExp = expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
-            const delivered = orders.filter((o: any) => o.estado === 'entregado' || o.estado === 'Delivered').length;
-            const pending = orders.filter((o: any) => ['pendiente', 'Pending', 'preparando', 'Preparing', 'Ready'].includes(o.estado)).length;
+                const delivered = orders.filter((o: any) => o.estado === 'entregado' || o.estado === 'Delivered').length;
+                const pending = orders.filter((o: any) => ['pendiente', 'Pending', 'preparando', 'Preparing', 'Ready'].includes(o.estado)).length;
 
-            setRealKpis({
-                totalOrders: orders.length,
-                deliveredOrders: delivered,
-                pendingOrders: pending,
-                activeCustomers: customers.length,
-                recurrentCustomers: customers.filter((u: any) => u.subscription).length,
-                allergicCustomers: allergicList.length,
-                totalRevenue: revenue,
-                lunchRevenue: lunchRev,
-                extrasRevenue: extraRev,
-                totalExpenses: totalExp,
-                retentionRate: customers.length > 0 ? Math.round((customers.filter((u: any) => u.subscription).length / customers.length) * 100) : 0
-            });
+                // Filter for Today and "preparando" status
+                const isToday = (dateStr: string) => {
+                    if (!dateStr) return false;
+                    const d = new Date(dateStr);
+                    const today = new Date();
+                    return d.getDate() === today.getDate() &&
+                           d.getMonth() === today.getMonth() &&
+                           d.getFullYear() === today.getFullYear();
+                };
 
-            setFinancialComparison([
-                { name: 'Ingresos', valor: revenue, fill: '#4A5D23' },
-                { name: 'Gastos', valor: totalExp || (revenue * 0.35), fill: '#ef4444' }
-            ]);
+                const todayPreparingOrders = orders.filter((o: any) => 
+                    isToday(o.created_at) && 
+                    o.estado?.toLowerCase() === 'preparando'
+                );
 
-            setRecentOrders(orders.slice(0, 10));
+                setRealKpis({
+                    totalOrders: todayPreparingOrders.length,
+                    deliveredOrders: delivered,
+                    pendingOrders: pending,
+                    activeCustomers: customers.length,
+                    recurrentCustomers: customers.filter((u: any) => u.subscription).length,
+                    allergicCustomers: allergicList.length,
+                    totalRevenue: revenue,
+                    lunchRevenue: lunchRev,
+                    extrasRevenue: extraRev,
+                    totalExpenses: totalExp,
+                    retentionRate: customers.length > 0 ? Math.round((customers.filter((u: any) => u.subscription).length / customers.length) * 100) : 0
+                });
+
+                setFinancialComparison([
+                    { name: 'Ingresos', valor: revenue, fill: '#4A5D23' },
+                    { name: 'Gastos', valor: totalExp || (revenue * 0.35), fill: '#ef4444' }
+                ]);
+
+                setRecentOrders(todayPreparingOrders.slice(0, 10));
         } catch (e) {
             console.error("Dashboard Sync Error:", e);
         }

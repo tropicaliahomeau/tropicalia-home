@@ -428,37 +428,37 @@ export default function AdminMenuPage() {
                         /* CRUD Form Modal */
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
                             <form onSubmit={handleSaveExtra} className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl relative">
-                                <h3 className="text-2xl font-black mb-6 border-b pb-4 text-gray-800">
+                                <h3 className="text-2xl font-black mb-6 border-b pb-4 text-[#1a1a1a]">
                                     {isAddingExtra ? 'Add New Item' : 'Edit Item'}
                                 </h3>
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-1">Name</label>
-                                        <input required type="text" className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 font-medium" value={editingExtra.nombre} onChange={e => setEditingExtra({ ...editingExtra, nombre: e.target.value })} />
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Name</label>
+                                        <input required type="text" className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 font-medium text-[#1a1a1a] placeholder:text-gray-400 bg-white" value={editingExtra.nombre} onChange={e => setEditingExtra({ ...editingExtra, nombre: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-1">Description</label>
-                                        <textarea required className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 text-sm h-24" value={editingExtra.descripcion} onChange={e => setEditingExtra({ ...editingExtra, descripcion: e.target.value })} />
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Description</label>
+                                        <textarea required className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 text-sm h-24 text-[#1a1a1a] placeholder:text-gray-400 bg-white" value={editingExtra.descripcion} onChange={e => setEditingExtra({ ...editingExtra, descripcion: e.target.value })} />
                                     </div>
                                     <div className="flex gap-4">
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">Price ($)</label>
-                                            <input required type="number" step="0.01" className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 font-bold text-[#4A5D23]" value={editingExtra.precio} onChange={e => setEditingExtra({ ...editingExtra, precio: e.target.value })} />
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">Price ($)</label>
+                                            <input required type="number" step="0.01" className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 font-bold text-[#1a1a1a] bg-white" value={editingExtra.precio} onChange={e => setEditingExtra({ ...editingExtra, precio: e.target.value })} />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-gray-500 mb-1">Category</label>
-                                            <select className="w-full border rounded-lg p-3 outline-none bg-white font-medium" value={editingExtra.categoria} onChange={e => setEditingExtra({ ...editingExtra, categoria: e.target.value })}>
-                                                <option value="bebida">Drink</option>
-                                                <option value="postre">Dessert</option>
-                                                <option value="acompañante">Side</option>
-                                                <option value="extra">Extra</option>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">Category</label>
+                                            <select className="w-full border border-gray-300 rounded-lg p-3 outline-none bg-white font-medium text-[#1a1a1a]" value={editingExtra.categoria} onChange={e => setEditingExtra({ ...editingExtra, categoria: e.target.value })}>
+                                                <option value="bebida" className="text-[#1a1a1a]">Drink</option>
+                                                <option value="postre" className="text-[#1a1a1a]">Dessert</option>
+                                                <option value="acompañante" className="text-[#1a1a1a]">Side</option>
+                                                <option value="extra" className="text-[#1a1a1a]">Extra</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-1">Image URL</label>
-                                        <input type="url" className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 text-sm" value={editingExtra.imagen_url || ''} onChange={e => setEditingExtra({ ...editingExtra, imagen_url: e.target.value })} placeholder="https://..." />
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Image URL</label>
+                                        <input type="url" className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 text-sm text-[#1a1a1a] placeholder:text-gray-400 bg-white" value={editingExtra.imagen_url || ''} onChange={e => setEditingExtra({ ...editingExtra, imagen_url: e.target.value })} placeholder="https://..." />
                                     </div>
                                     <div className="flex items-center gap-3 py-2">
                                         <input type="checkbox" id="disponible" className="w-5 h-5 text-[#4A5D23] rounded focus:ring-[#4A5D23]" checked={editingExtra.disponible} onChange={e => setEditingExtra({ ...editingExtra, disponible: e.target.checked })} />
@@ -466,7 +466,7 @@ export default function AdminMenuPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
+                                <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
                                     <button type="button" onClick={() => { setIsAddingExtra(false); setEditingExtra(null); }} className="px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
                                         Cancel
                                     </button>
