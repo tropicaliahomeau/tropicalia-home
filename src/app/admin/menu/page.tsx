@@ -428,14 +428,17 @@ export default function AdminMenuPage() {
 
                             {editingItem === mergedMeal.id ? (
                                 <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); handleSave(meal, e.currentTarget); }}>
-                                    <input
-                                        type="text"
-                                        name="title"
-                                        defaultValue={mergedMeal.title}
-                                        placeholder="Meal Name"
-                                        className="w-full text-lg font-bold border-b border-gray-300 focus:border-[#4A5D23] outline-none py-1"
-                                        required
-                                    />
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Plate Name</label>
+                                        <input
+                                            type="text"
+                                            name="title"
+                                            defaultValue={mergedMeal.title}
+                                            placeholder="Meal Name"
+                                            className="w-full border border-gray-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#4A5D23]/30 font-bold text-lg text-[#1a1a1a] bg-white placeholder:text-gray-400"
+                                            required
+                                        />
+                                    </div>
                                     <textarea
                                         name="description"
                                         defaultValue={mergedMeal.description}
