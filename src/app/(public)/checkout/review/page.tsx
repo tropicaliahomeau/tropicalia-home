@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import Link from 'next/link';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function ReviewPage() {
     const {
@@ -13,10 +14,25 @@ export default function ReviewPage() {
     } = useUser();
 
     const selectedMealObjects = cart.meals;
+    const [weekPrice, setWeekPrice] = useState<number>(85.00);
+
+    useEffect(() => {
+        const fetchActivePrice = async () => {
+            try {
+                const { data } = await supabase.from('weekly_menus').select('precio_semana').eq('is_enabled', true).limit(1);
+                if (data && data[0] && data[0].precio_semana != null) {
+                    setWeekPrice(Number(data[0].precio_semana));
+                }
+            } catch (e) {
+                console.error("Error fetching active price:", e);
+            }
+        };
+        fetchActivePrice();
+    }, []);
 
     const calculateTotal = () => {
         const isFullWeek = cart.meals.length >= 5;
-        const daysCost = isFullWeek ? 85.00 : (cart.meals.length * 18.00);
+        const daysCost = isFullWeek ? weekPrice : (cart.meals.length * 18.00);
         const extrasCost = cart.extras.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
         return {
@@ -76,7 +92,7 @@ export default function ReviewPage() {
                                 ))}
                                 {isFullWeek && (
                                     <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-xl text-center font-bold text-sm">
-                                        Full Week Promo Applied! 🎉 ($85.00)
+                                        Full Week Promo Applied! 🎉 (${weekPrice.toFixed(2)})
                                     </div>
                                 )}
                             </div>
@@ -126,7 +142,7 @@ export default function ReviewPage() {
                         <div className="space-y-4 mb-8">
                             <div className="flex justify-between text-gray-600">
                                 <span>Meals ({cart.meals.length})</span>
-                                <span className="font-bold text-gray-800">${isFullWeek ? '85.00' : (cart.meals.length * 18.00).toFixed(2)}</span>
+                                <span className="font-bold text-gray-800">${isFullWeek ? weekPrice.toFixed(2) : (cart.meals.length * 18.00).toFixed(2)}</span>
                             </div>
 
                             <div className="border-t pt-4 flex justify-between items-center">

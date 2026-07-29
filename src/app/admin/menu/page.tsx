@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { MENUS } from '@/data/menus';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
+import { getSydneyStatus, getWeekName, syncWeeklyMenus } from '@/utils/dateUtils';
 
 export default function AdminMenuPage() {
+    const { targetSunday } = getSydneyStatus();
     const [selectedWeekId, setSelectedWeekId] = useState<string>(MENUS[0].id);
     const [weeksData, setWeeksData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -26,9 +28,17 @@ export default function AdminMenuPage() {
         try {
             const { data, error } = await supabase.from('weekly_menus').select('*').order('semana_inicio', { ascending: true });
             if (data && !error) {
-                const mappedData = data.map((w, i) => ({ ...w, staticWeekId: `week-${i + 1}` }));
+                // Sync status based on current Sydney timezone clock
+                const didUpdate = await syncWeeklyMenus(data);
+                let finalWeeks = data;
+                if (didUpdate) {
+                    const { data: freshData } = await supabase.from('weekly_menus').select('*').order('semana_inicio', { ascending: true });
+                    if (freshData) finalWeeks = freshData;
+                }
+
+                const mappedData = finalWeeks.map((w, i) => ({ ...w, staticWeekId: `week-${i + 1}` }));
                 setWeeksData(mappedData);
-                const active = mappedData.find(w => w.activo);
+                const active = mappedData.find(w => w.is_enabled);
                 if (active) setSelectedWeekId(active.staticWeekId);
                 
                 // Fetch weekly_menu_items to map Supabase overrides
@@ -291,7 +301,7 @@ export default function AdminMenuPage() {
                                             </svg>
                                         </div>
                                     )}
-                                    <h4 className="text-xl font-black mb-1">{week.name}</h4>
+                                    <h4 className="text-xl font-black mb-1">{getWeekName(week.id, targetSunday)}</h4>
                                     <p className={`text-sm font-medium ${isEnabled ? 'text-green-100' : 'text-gray-500'}`}>
                                         {isEnabled ? 'Active - Customers can order' : 'Locked - View only'}
                                     </p>
@@ -299,6 +309,56 @@ export default function AdminMenuPage() {
                             );
                         })}
                     </div>
+                    {/* CAMBIO 4: Admin option to change the full week price */}
+                    {selectedWeekId && (
+                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
+                            <div>
+                                <h4 className="font-bold text-gray-800 text-base">Full Week Price</h4>
+                                <p className="text-sm text-gray-500">Set the price when customers purchase all 5 days for this week cycle.</p>
+                            </div>
+                            <form 
+                                className="flex gap-2 w-full md:w-auto" 
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.currentTarget);
+                                    const newPrice = parseFloat(formData.get('weekPrice') as string);
+                                    if (isNaN(newPrice) || newPrice <= 0) {
+                                        alert("Please enter a valid price.");
+                                        return;
+                                    }
+                                    const targetDbWeek = weeksData.find(w => w.staticWeekId === selectedWeekId);
+                                    if (!targetDbWeek) return;
+                                    try {
+                                        const { error } = await supabase
+                                            .from('weekly_menus')
+                                            .update({ precio_semana: newPrice })
+                                            .eq('id', targetDbWeek.id);
+                                        if (error) throw error;
+                                        alert("✅ Price saved successfully!");
+                                        await fetchWeeks();
+                                    } catch (e: any) {
+                                        console.error(e);
+                                        alert("Failed to save price: " + e.message);
+                                    }
+                                }}
+                            >
+                                <input 
+                                    type="number" 
+                                    name="weekPrice" 
+                                    step="0.01" 
+                                    defaultValue={weeksData.find(w => w.staticWeekId === selectedWeekId)?.precio_semana ?? 85.00}
+                                    key={selectedWeekId} // force input reset on week change
+                                    className="bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-[#1a1a1a] outline-none focus:ring-2 focus:ring-[#4A5D23]"
+                                />
+                                <button 
+                                    type="submit" 
+                                    className="px-6 py-2.5 bg-[#4A5D23] text-white rounded-xl font-bold hover:bg-[#3a491c] transition-all text-sm"
+                                >
+                                    Save Price
+                                </button>
+                            </form>
+                        </div>
+                    )}
                 </div>
             )}
 

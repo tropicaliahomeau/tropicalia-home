@@ -28,6 +28,7 @@ export default function DashboardPage() {
     });
     const [realKpis, setRealKpis] = React.useState({
         totalOrders: 0,
+        weekOrders: 0,
         deliveredOrders: 0,
         pendingOrders: 0,
         activeCustomers: 0,
@@ -65,8 +66,13 @@ export default function DashboardPage() {
                 const delivered = orders.filter((o: any) => o.estado === 'entregado' || o.estado === 'Delivered').length;
                 const pending = orders.filter((o: any) => o.estado?.toLowerCase() === 'preparando').length;
 
+                const now = new Date();
+                const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const weekOrdersCount = orders.filter((o: any) => o.created_at && new Date(o.created_at) >= sevenDaysAgo).length;
+
                 setRealKpis({
                     totalOrders: orders.length,
+                    weekOrders: weekOrdersCount,
                     deliveredOrders: delivered,
                     pendingOrders: pending,
                     activeCustomers: customers.length,
@@ -193,11 +199,16 @@ export default function DashboardPage() {
             {activeTab === 'hoy' ? (
                 <div className="space-y-6">
                     {/* Real-time Operacional Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between h-36 border-b-4 border-b-[#4A5D23]">
-                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pedidos Hoy</span>
+                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Total Orders</span>
                             <div className="text-4xl font-black text-[#4A5D23]">{realKpis.totalOrders}</div>
                             <div className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full w-fit font-bold">ACTIVO</div>
+                        </div>
+                        <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between h-36 border-b-4 border-b-blue-400">
+                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">This Week</span>
+                            <div className="text-4xl font-black text-blue-500">{realKpis.weekOrders}</div>
+                            <div className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full w-fit font-bold">7 DÍAS</div>
                         </div>
                         <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between h-36 border-b-4 border-b-orange-400">
                             <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pending</span>

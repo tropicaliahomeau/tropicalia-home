@@ -7,6 +7,7 @@ import Image from 'next/image';
 import styles from './menu.module.css';
 import { MENUS } from '@/data/menus';
 import { supabase } from '@/lib/supabaseClient';
+import { getSydneyStatus, getWeekIndexForSunday, getWeekName, syncWeeklyMenus } from '@/utils/dateUtils';
 
 export default function MenuPage() {
     const {
@@ -18,21 +19,37 @@ export default function MenuPage() {
     } = useUser();
 
     const router = useRouter();
+    const { targetSunday, isClosedWindow } = getSydneyStatus();
     const [selectedWeekId, setSelectedWeekId] = useState<string>(MENUS[0].id);
     const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'drinks'>('daily');
     const [enabledWeeks, setEnabledWeeks] = useState<string[]>([]);
+    const [weeksData, setWeeksData] = useState<any[]>([]);
     const [dbMealsMap, setDbMealsMap] = useState<Record<string, any>>({});
 
     useEffect(() => {
         const fetchStatus = async () => {
-            const { data } = await supabase.from('weekly_menus').select('id, is_enabled').order('semana_inicio', { ascending: true });
+            const { data } = await supabase.from('weekly_menus').select('*').order('semana_inicio', { ascending: true });
             if (data) {
-                const enabled = data.map((w, index) => w.is_enabled ? `week-${index + 1}` : null).filter(Boolean) as string[];
+                const didUpdate = await syncWeeklyMenus(data);
+                let finalWeeks = data;
+                if (didUpdate) {
+                    const { data: freshData } = await supabase.from('weekly_menus').select('*').order('semana_inicio', { ascending: true });
+                    if (freshData) finalWeeks = freshData;
+                }
+
+                setWeeksData(finalWeeks);
+
+                const enabled = finalWeeks.map((w, index) => w.is_enabled ? `week-${index + 1}` : null).filter(Boolean) as string[];
                 setEnabledWeeks(enabled);
                 
-                // Optional: set initial week to the first enabled one
-                const autoActive = enabled.find(w => MENUS.some(m => m.id === w));
-                if (autoActive) setSelectedWeekId(autoActive);
+                // Set initial week to the active one by calculation
+                const activeWeekIndex = getWeekIndexForSunday(targetSunday);
+                const autoActive = `week-${activeWeekIndex + 1}`;
+                if (MENUS.some(m => m.id === autoActive)) {
+                    setSelectedWeekId(autoActive);
+                } else if (enabled.length > 0) {
+                    setSelectedWeekId(enabled[0]);
+                }
             }
 
             // Fetch weekly_menu_items to map Supabase overrides
@@ -73,7 +90,9 @@ export default function MenuPage() {
     // pricing calculation integrated with UserContext cart
     const calculateTotal = () => {
         const isFullWeek = cart.meals.length >= 5;
-        const daysCost = isFullWeek ? 85.00 : (cart.meals.length * 18.00);
+        const dbWeek = weeksData.find((w, index) => `week-${index + 1}` === selectedWeekId);
+        const currentPrice = dbWeek?.precio_semana != null ? Number(dbWeek.precio_semana) : 85.00;
+        const daysCost = isFullWeek ? currentPrice : (cart.meals.length * 18.00);
         const extrasCost = cart.extras.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
         return {
@@ -139,8 +158,11 @@ export default function MenuPage() {
             <div className={styles.container}>
                 <div className="text-center mb-10">
                     <p className="text-[#4A5D23] font-bold uppercase tracking-widest text-sm mb-2">Paso 1 de 3: Selección</p>
-                    <h1 className="text-4xl font-black text-gray-800 mb-2">Menú Semanal - {currentMenu.name}</h1>
-                    <p className="text-gray-600 text-lg italic">Selecciona tus almuerzos. ¡Pide 5 días por solo $85!</p>
+                    <h1 className="text-4xl font-black text-gray-800 mb-2">Menú Semanal - {getWeekName(currentMenu.id, targetSunday)}</h1>
+                    <p className="text-gray-600 text-lg italic">Selecciona tus almuerzos. ¡Pide 5 días por solo ${(() => {
+                        const dbWeek = weeksData.find((w, index) => `week-${index + 1}` === selectedWeekId);
+                        return dbWeek?.precio_semana != null ? Number(dbWeek.precio_semana).toFixed(0) : '85';
+                    })()}!</p>
                 </div>
 
                 {/* Week Selector */}
@@ -156,7 +178,7 @@ export default function MenuPage() {
                                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
-                            {week.name}
+                            {getWeekName(week.id, targetSunday)}
                         </button>
                     ))}
                 </div>
@@ -164,7 +186,7 @@ export default function MenuPage() {
                 <div className="mb-8 flex flex-col items-center gap-3">
                     {!isOrderingEnabled && (
                         <div className="bg-yellow-100 text-yellow-800 px-6 py-2 rounded-full font-medium border border-yellow-200 mb-4 text-sm mt-2">
-                            🔒 This week is not available for ordering yet
+                            {isClosedWindow ? "🔒 Orders for this week are closed" : "🔒 This week is not available for ordering yet"}
                         </div>
                     )}
 
@@ -356,7 +378,10 @@ export default function MenuPage() {
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500">{cart.meals.length} Almuerzos</span>
                                         <span className="font-black text-gray-700">
-                                            {isFullWeek ? '$85.00' : `$${(cart.meals.length * 18).toFixed(2)}`}
+                                            {isFullWeek ? `$${(() => {
+                                                const dbWeek = weeksData.find((w, index) => `week-${index + 1}` === selectedWeekId);
+                                                return dbWeek?.precio_semana != null ? Number(dbWeek.precio_semana).toFixed(2) : '85.00';
+                                            })()}` : `$${(cart.meals.length * 18).toFixed(2)}`}
                                         </span>
                                     </div>
                                 </div>

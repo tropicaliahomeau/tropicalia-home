@@ -40,10 +40,25 @@ export default function PaymentPage() {
     });
 
     const selectedMealObjects = cart.meals;
+    const [weekPrice, setWeekPrice] = useState<number>(85.00);
+
+    useEffect(() => {
+        const fetchActivePrice = async () => {
+            try {
+                const { data } = await supabase.from('weekly_menus').select('precio_semana').eq('is_enabled', true).limit(1);
+                if (data && data[0] && data[0].precio_semana != null) {
+                    setWeekPrice(Number(data[0].precio_semana));
+                }
+            } catch (e) {
+                console.error("Error fetching active price:", e);
+            }
+        };
+        fetchActivePrice();
+    }, []);
 
     const calculateTotal = () => {
         const isFullWeek = cart.meals.length >= 5;
-        const daysCost = isFullWeek ? 85.00 : (cart.meals.length * 18.00);
+        const daysCost = isFullWeek ? weekPrice : (cart.meals.length * 18.00);
         const extrasCost = cart.extras.reduce((acc, item) => acc + (item.price * item.quantity), 0);
         return daysCost + extrasCost;
     };
