@@ -8,7 +8,7 @@ import { getSydneyStatus, getWeekName, syncWeeklyMenus } from '@/utils/dateUtils
 
 export default function AdminMenuPage() {
     const { targetSunday } = getSydneyStatus();
-    const [selectedWeekId, setSelectedWeekId] = useState<string>(MENUS[0].id);
+    const [selectedWeekId, setSelectedWeekId] = useState<string>('');
     const [weeksData, setWeeksData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -39,7 +39,11 @@ export default function AdminMenuPage() {
                 const mappedData = finalWeeks.map((w, i) => ({ ...w, staticWeekId: `week-${i + 1}` }));
                 setWeeksData(mappedData);
                 const active = mappedData.find(w => w.is_enabled);
-                if (active) setSelectedWeekId(active.staticWeekId);
+                if (active && !selectedWeekId) {
+                    setSelectedWeekId(active.staticWeekId);
+                } else if (mappedData.length > 0 && !selectedWeekId) {
+                    setSelectedWeekId(mappedData[0].staticWeekId);
+                }
                 
                 // Fetch weekly_menu_items to map Supabase overrides
                 const { data: wmiData } = await supabase
@@ -284,27 +288,45 @@ export default function AdminMenuPage() {
                         {MENUS.map(week => {
                             const dbWeek = weeksData.find(w => w.staticWeekId === week.id);
                             const isEnabled = dbWeek?.is_enabled === true;
+                            const isSelected = selectedWeekId === week.id;
                             
                             return (
                                 <div 
                                     key={week.id} 
                                     onClick={() => {
                                         setSelectedWeekId(week.id);
-                                        if (!isEnabled) toggleWeekEnabled(week.id, true);
                                     }}
-                                    className={`relative flex flex-col justify-center items-center p-6 rounded-2xl border-2 cursor-pointer transition-all shadow-sm hover:shadow-md ${isEnabled ? 'border-[#4A5D23] bg-[#4A5D23] text-white scale-[1.02]' : 'border-gray-200 bg-gray-50 text-gray-800 hover:border-gray-300'}`}
+                                    className={`relative flex flex-col justify-center items-center p-6 rounded-2xl border-2 cursor-pointer transition-all shadow-sm hover:shadow-md ${isSelected ? 'border-[#4A5D23] bg-green-50/50 scale-[1.02]' : 'border-gray-200 bg-gray-50 hover:border-gray-300'} text-gray-800`}
                                 >
-                                    {isEnabled && (
-                                        <div className="absolute top-4 right-4 bg-white text-[#4A5D23] rounded-full p-1 shadow-sm">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    {isEnabled ? (
+                                        <div className="absolute top-4 right-4 bg-[#4A5D23] text-white rounded-full p-1 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
                                         </div>
+                                    ) : (
+                                        <div className="absolute top-4 right-4 bg-gray-200 text-gray-400 rounded-full p-1 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                        </div>
                                     )}
-                                    <h4 className="text-xl font-black mb-1">{getWeekName(week.id, targetSunday)}</h4>
-                                    <p className={`text-sm font-medium ${isEnabled ? 'text-green-100' : 'text-gray-500'}`}>
-                                        {isEnabled ? 'Active - Customers can order' : 'Locked - View only'}
+                                    <h4 className="text-xl font-black mb-1 text-gray-900">{getWeekName(week.id, targetSunday)}</h4>
+                                    <p className={`text-xs font-bold uppercase tracking-wider ${isEnabled ? 'text-[#4A5D23]' : 'text-gray-400'}`}>
+                                        {isEnabled ? 'Active - Orders Open' : 'Locked - Closed'}
                                     </p>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            await toggleWeekEnabled(week.id, !isEnabled);
+                                        }}
+                                        className={`mt-4 px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2
+                                            ${isEnabled 
+                                                ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' 
+                                                : 'bg-white border-[#4A5D23] text-[#4A5D23] hover:bg-[#4A5D23] hover:text-white'}`}
+                                    >
+                                        {isEnabled ? 'Disable Week' : 'Enable Week'}
+                                    </button>
                                 </div>
                             );
                         })}
