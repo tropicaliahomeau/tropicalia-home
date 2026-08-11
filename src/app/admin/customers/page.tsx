@@ -2,99 +2,142 @@
 
 import { useEffect, useState } from 'react';
 
-interface CustomerData {
+interface UserData {
     id: string;
     full_name: string;
     email: string;
     phone: string;
-    weeks_ordered_count: number;
-    last_week_ordered: string;
-    purchase_frequency: string;
+    created_at: string;
+    orders_count: number;
 }
 
 export default function AdminCustomers() {
-    const [customers, setCustomers] = useState<CustomerData[]>([]);
+    const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [isKeyMissing, setIsKeyMissing] = useState(false);
 
     useEffect(() => {
-        async function fetchCustomers() {
+        async function fetchUsers() {
             try {
-                const res = await fetch('/api/admin/customers');
+                const res = await fetch('/api/admin/users');
                 if (res.ok) {
                     const data = await res.json();
-                    setCustomers(data);
+                    setUsers(data);
+                } else {
+                    const data = await res.json();
+                    if (data.error === 'MISSING_SERVICE_ROLE_KEY') {
+                        setIsKeyMissing(true);
+                    }
+                    setErrorMsg(data.message || 'Failed to fetch registered users.');
                 }
             } catch (error) {
-                console.error("Failed to fetch customers", error);
+                console.error("Failed to fetch registered users", error);
+                setErrorMsg('An unexpected error occurred while fetching users.');
             } finally {
                 setLoading(false);
             }
         }
-        fetchCustomers();
+        fetchUsers();
     }, []);
 
-    const filteredCustomers = customers.filter(c =>
-        c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredUsers = users.filter(u =>
+        (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.phone || '').includes(searchTerm)
     );
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search customers..."
-                        className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+                {!isKeyMissing && (
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Search customers..."
+                            className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                )}
             </div>
+
+            {isKeyMissing && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <span className="text-yellow-600 font-bold">⚠️ NOTE:</span>
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-yellow-700 font-medium">
+                                The environment variable <code className="font-mono bg-yellow-100 px-1 py-0.5 rounded text-yellow-800">SUPABASE_SERVICE_ROLE_KEY</code> is missing. 
+                                Please add this key to your local configuration (<code className="font-mono bg-yellow-100 px-1 py-0.5 rounded text-yellow-800">.env.local</code>) and to your project settings in <span className="font-bold">Vercel</span> to view Supabase Auth users.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {errorMsg && !isKeyMissing && (
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md text-sm text-red-700 font-medium">
+                    Error: {errorMsg}
+                </div>
+            )}
 
             <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weeks Ordered</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Week</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Teléfono</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha de Registro</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Total de Pedidos</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Loading...</td>
+                                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                                        <div className="flex justify-center items-center gap-2">
+                                            <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                                            Loading customers...
+                                        </div>
+                                    </td>
                                 </tr>
-                            ) : filteredCustomers.length === 0 ? (
+                            ) : isKeyMissing ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">No customers found.</td>
+                                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                                        Please set SUPABASE_SERVICE_ROLE_KEY to view data.
+                                    </td>
+                                </tr>
+                            ) : filteredUsers.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">No registered users found.</td>
                                 </tr>
                             ) : (
-                                filteredCustomers.map((customer) => (
-                                    <tr key={customer.id} className="hover:bg-gray-50">
+                                filteredUsers.map((user) => (
+                                    <tr key={user.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{customer.full_name}</div>
+                                            <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-500">{customer.email}</div>
-                                            <div className="text-sm text-gray-400">{customer.phone}</div>
+                                            <div className="text-sm text-gray-500">{user.email}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-500">{user.phone}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                {customer.weeks_ordered_count}
+                                                {user.orders_count}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {customer.last_week_ordered}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {customer.purchase_frequency}
                                         </td>
                                     </tr>
                                 ))
